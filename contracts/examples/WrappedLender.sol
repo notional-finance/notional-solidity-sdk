@@ -2,16 +2,44 @@
 pragma solidity >0.7.0;
 pragma abicoder v2;
 
+import "../lib/AssetRate.sol";
 import "../lib/Addresses.sol";
 import "../lib/EncodeDecode.sol";
 import "../lib/Types.sol";
 import "interfaces/notional/NotionalCallback.sol";
 
 contract WrappedLender is NotionalCallback, KovanAddresses {
-    uint16 public immutable NOTIONAL_CURRENCY_ID;
+    using AssetRate for AssetRateParameters;
 
-    constructor (uint16 currencyId) {
+    uint16 public immutable NOTIONAL_CURRENCY_ID;
+    uint32 public immutable FCASH_MATURITY;
+
+    uint256 public totalfCashBalance;
+    mapping(address => uint256) public accountfCashBalance;
+
+    constructor (uint16 currencyId, uint32 maturity) {
         NOTIONAL_CURRENCY_ID = currencyId;
+        FCASH_MATURITY = maturity;
+    }
+
+    function withdrawCash(bool redeemToUnderlying) external {
+        require(FCASH_MATURITY < block.timestamp, "fCash not matured");
+        AssetRateParameters memory settlementRate = NotionalV2.getSettlementRate(
+            NOTIONAL_CURRENCY_ID,
+            FCASH_MATURITY
+        );
+        // If the settlement rate has not been set yet, anyone can call settleAccount on NotionalV2 to
+        // ensure that it gets set system wide.
+        require(settlementRate.rate > 0, "Settlement Rate not set");
+
+        uint256 fCashBalance = accountfCashBalance[msg.sender];
+        // This is the amount of cash that the user's fCash has settled to
+        int256 notionalCashBalance = settlementRate.convertFromUnderlying(SafeInt256.toInt(fCashBalance));
+        require(0 < notionalCashBalance && notionalCashBalance <= type(uint88).max);
+
+        // If this fails, then there is some issue. If redeem to underlying fails then there is an
+        // issue with Compound.
+        NotionalV2.withdraw(NOTIONAL_CURRENCY_ID, uint88(notionalCashBalance), redeemToUnderlying);
     }
 
     /// @notice When calling this method, the contract will lend the specified fCashAmount in the corresponding
@@ -66,18 +94,23 @@ contract WrappedLender is NotionalCallback, KovanAddresses {
         /**
          * A better option might be to have the wrapper take the token and hold the fCash, in this
          * case the wrapper contract gets the ERC20 token approval:
-         *   uint256 balanceBefore = token.balanceOf(address(this))
          *   token.transferFrom(msg.sender, address(this), depositAmount)
-         *   uint256 balanceAfter = token.balanceOf(address(this))
          *
          *   ... same batch action generation
          *
+         *   uint256 balanceBefore = token.balanceOf(address(this))
          *   int256 fCashBalanceBefore = notionalV2.signedBalanceOf(address(this), FCASH_ID)
          *   // Maybe check this against the previously recorded balance...
          *
          *   // No callback here, the fCash asset gets put into this wrapper contract
          *   notionalV2.batchBalanceAndTradeAction(address(this), actions)
+         *
          *   int256 fCashBalanceAfter = notionalV2.signedBalanceOf(address(this), FCASH_ID)
+         *   uint256 balanceAfter = token.balanceOf(address(this))
+         *  
+         *   // Refund the residual back to the sender
+         *   uint256 residual = balanceBefore - balanceAfter;
+         *   token.transfer(msg.sender, residual)
          *
          *   there is no callback here, just need to validate the new fCash position and then
          *   update some internal mapping for fCash balances.
