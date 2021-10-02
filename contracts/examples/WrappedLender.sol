@@ -24,7 +24,7 @@ contract WrappedLender is NotionalCallback, KovanAddresses {
     /// @param minImpliedRate the minimum interest rate that the account will lend at for slippage protection
     function lendWrappedUsingCToken(
         uint256 depositAmount,
-        uint8 marketIndex,
+        uint8 marketIndex, // NOTE: may want to consider limiting the wrapper to only having 1 market index
         uint88 fCashAmount,
         uint32 minImpliedRate
     ) external {
@@ -63,6 +63,27 @@ contract WrappedLender is NotionalCallback, KovanAddresses {
         uint88 fCashAmount,
         uint32 minImpliedRate
     ) internal {
+        /**
+         * A better option might be to have the wrapper take the token and hold the fCash, in this
+         * case the wrapper contract gets the ERC20 token approval:
+         *   uint256 balanceBefore = token.balanceOf(address(this))
+         *   token.transferFrom(msg.sender, address(this), depositAmount)
+         *   uint256 balanceAfter = token.balanceOf(address(this))
+         *
+         *   ... same batch action generation
+         *
+         *   int256 fCashBalanceBefore = notionalV2.signedBalanceOf(address(this), FCASH_ID)
+         *   // Maybe check this against the previously recorded balance...
+         *
+         *   // No callback here, the fCash asset gets put into this wrapper contract
+         *   notionalV2.batchBalanceAndTradeAction(address(this), actions)
+         *   int256 fCashBalanceAfter = notionalV2.signedBalanceOf(address(this), FCASH_ID)
+         *
+         *   there is no callback here, just need to validate the new fCash position and then
+         *   update some internal mapping for fCash balances.
+         */
+
+
         BalanceActionWithTrades[] memory actions = new BalanceActionWithTrades[](1);
         actions[0] = BalanceActionWithTrades({
             actionType: actionType,
