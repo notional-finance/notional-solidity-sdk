@@ -5,9 +5,10 @@ pragma abicoder v2;
 import "interfaces/compound/CTokenInterface.sol";
 import "interfaces/compound/CErc20Interface.sol";
 import "interfaces/notional/NotionalProxy.sol";
+import "interfaces/notional/NotionalCallback.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract CompoundToNotionalV2 {
+contract CompoundToNotionalV2 is NotionalCallback {
     NotionalProxy public immutable NotionalV2;
     address public owner;
 
@@ -59,7 +60,7 @@ contract CompoundToNotionalV2 {
         address sender,
         address account,
         bytes calldata callbackData
-    ) external returns (uint256) {
+    ) external override {
         require(msg.sender == address(NotionalV2) && sender == address(this), "Unauthorized callback");
 
         (

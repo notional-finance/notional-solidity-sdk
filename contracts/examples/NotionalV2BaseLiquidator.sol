@@ -6,16 +6,9 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "interfaces/notional/NotionalProxy.sol";
 import "interfaces/compound/CErc20Interface.sol";
 import "interfaces/compound/CEtherInterface.sol";
+import "interfaces/WETH9.sol";
 import "../lib/DateTime.sol";
 import "../lib/SafeInt256.sol";
-
-interface WETH9 {
-    function deposit() external payable;
-
-    function withdraw(uint256 wad) external;
-
-    function transfer(address dst, uint256 wad) external returns (bool);
-}
 
 abstract contract NotionalV2BaseLiquidator {
     using SafeInt256 for int256;

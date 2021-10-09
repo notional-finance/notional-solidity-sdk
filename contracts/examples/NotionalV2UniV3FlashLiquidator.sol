@@ -3,22 +3,11 @@ pragma solidity >0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "./NotionalV2FlashLiquidator.sol";
-import "../../interfaces/uniswap/v3/ISwapRouter.sol";
+import "interfaces/uniswap/v3/ISwapRouter.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract NotionalV2UniV3FlashLiquidator is NotionalV2FlashLiquidator {
-    struct ExactOutputSingleParams {
-        address tokenIn;
-        address tokenOut;
-        uint24 fee;
-        address recipient;
-        uint256 deadline;
-        uint256 amountOut;
-        uint256 amountInMaximum;
-        uint160 sqrtPriceLimitX96;
-    }
-
-    address public EXCHANGE;
+    ISwapRouter public UniV3SwapRouter;
 
     constructor(
         NotionalProxy notionalV2_,
@@ -27,13 +16,13 @@ contract NotionalV2UniV3FlashLiquidator is NotionalV2FlashLiquidator {
         address weth_,
         address cETH_,
         address owner_,
-        address exchange_
+        ISwapRouter exchange_
     ) NotionalV2FlashLiquidator(notionalV2_, lendingPool_, addressProvider_, weth_, cETH_, owner_) {
-        EXCHANGE = exchange_;
+        UniV3SwapRouter = exchange_;
     }
 
-    function setExchange(address exchange_) external onlyOwner {
-        EXCHANGE = exchange_;
+    function setExchange(ISwapRouter exchange_) external onlyOwner {
+        UniV3SwapRouter = exchange_;
     }
 
     function executeDexTrade(
@@ -65,6 +54,6 @@ contract NotionalV2UniV3FlashLiquidator is NotionalV2FlashLiquidator {
             priceLimit
         );
 
-       return ISwapRouter(EXCHANGE).exactInputSingle(swapParams);
+       return UniV3SwapRouter.exactInputSingle(swapParams);
     }
 }
