@@ -50,9 +50,14 @@ library SafeToken {
         return endingBalance.sub(startingBalance);
     }
 
+    function redeemCTokenEntireBalance(address token)
+        internal
+    {
+        redeemCToken(token, IERC20(token).balanceOf(address(this)));
+    }
+
     function redeemCToken(address token, uint256 cTokenAmount)
         internal
-        returns (uint256)
     {
         uint256 success = CErc20Interface(token).redeem(cTokenAmount);
         require(

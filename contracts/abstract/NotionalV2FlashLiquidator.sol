@@ -2,8 +2,9 @@
 pragma solidity ^0.7.0;
 pragma abicoder v2;
 
-import "../abstract/NotionalV2BaseLiquidator.sol";
+import "./NotionalV2BaseLiquidator.sol";
 import "../lib/SafeInt256.sol";
+import "../lib/SafeToken.sol";
 import "interfaces/aave/IFlashLoanReceiver.sol";
 import "interfaces/aave/IFlashLender.sol";
 import "interfaces/notional/NotionalProxy.sol";
@@ -43,14 +44,14 @@ abstract contract NotionalV2FlashLiquidator is NotionalV2BaseLiquidator, IFlashL
     function setCTokenAddress(address cToken) external onlyOwner {
         address underlying = CTokenInterface(cToken).underlying();
         // Notional V2 needs to be able to pull cTokens
-        checkAllowanceOrSet(cToken, address(NotionalV2));
+        SafeToken.checkAndSetMaxAllowance(cToken, address(NotionalV2));
         // Lending pool needs to be able to pull underlying
-        checkAllowanceOrSet(underlying, LENDING_POOL);
+        SafeToken.checkAndSetMaxAllowance(underlying, LENDING_POOL);
         underlyingToCToken[underlying] = cToken;
     }
 
     function approveToken(address token, address spender) external onlyOwner {
-        IERC20(token).approve(spender, type(uint256).max);
+        SafeToken.checkAndSetMaxAllowance(token, spender);
     }
 
     // Profit estimation
@@ -63,8 +64,7 @@ abstract contract NotionalV2FlashLiquidator is NotionalV2BaseLiquidator, IFlashL
         address onBehalfOf,
         bytes calldata params,
         uint16 referralCode
-    ) external returns (uint256) {
-        require(msg.sender == OWNER, "Contract owner required");
+    ) external onlyOwner returns (uint256) {
         IFlashLender(flashLender).flashLoan(
             receiverAddress,
             assets,
@@ -84,6 +84,7 @@ abstract contract NotionalV2FlashLiquidator is NotionalV2BaseLiquidator, IFlashL
         address initiator,
         bytes calldata params
     ) external override returns (bool) {
+        // NOTE: no check on initiator because all profits will be distributed back to the owner
         require(msg.sender == LENDING_POOL); // dev: unauthorized caller
         LiquidationAction action = LiquidationAction(abi.decode(params, (uint8)));
 

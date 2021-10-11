@@ -2,12 +2,12 @@
 pragma solidity >0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "./NotionalV2FlashLiquidator.sol";
+import "../abstract/NotionalV2FlashLiquidator.sol";
 import "interfaces/uniswap/v3/ISwapRouter.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract NotionalV2UniV3FlashLiquidator is NotionalV2FlashLiquidator {
-    ISwapRouter public UniV3SwapRouter;
+    ISwapRouter public immutable UniV3SwapRouter;
 
     constructor(
         NotionalProxy notionalV2_,
@@ -18,10 +18,6 @@ contract NotionalV2UniV3FlashLiquidator is NotionalV2FlashLiquidator {
         address owner_,
         ISwapRouter exchange_
     ) NotionalV2FlashLiquidator(notionalV2_, lendingPool_, addressProvider_, weth_, cETH_, owner_) {
-        UniV3SwapRouter = exchange_;
-    }
-
-    function setExchange(ISwapRouter exchange_) external onlyOwner {
         UniV3SwapRouter = exchange_;
     }
 
