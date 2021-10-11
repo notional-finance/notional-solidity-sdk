@@ -2,7 +2,7 @@
 pragma solidity ^0.7.0;
 pragma abicoder v2;
 
-import "./NotionalV2BaseLiquidator.sol";
+import "../abstract/NotionalV2BaseLiquidator.sol";
 import "../lib/SafeInt256.sol";
 import "interfaces/aave/IFlashLoanReceiver.sol";
 import "interfaces/aave/IFlashLender.sol";
