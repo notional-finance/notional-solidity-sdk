@@ -35,7 +35,6 @@ abstract contract NotionalV2BaseLiquidator {
         CrossCurrencyfCash_WithTransferFee_NoWithdraw
     }
 
-    // NOTE: potentially inherit this from addresses....
     NotionalProxy public immutable NotionalV2;
     mapping(address => address) underlyingToCToken;
     address public immutable WETH;

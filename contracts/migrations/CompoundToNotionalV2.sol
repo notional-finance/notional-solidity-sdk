@@ -10,16 +10,18 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract CompoundToNotionalV2 is NotionalCallback {
     NotionalProxy public immutable NotionalV2;
-    address public owner;
+    address public immutable owner;
 
-    constructor(NotionalProxy notionalV2_) {
+    constructor(NotionalProxy notionalV2_, address owner_) {
         NotionalV2 = notionalV2_;
-        owner = msg.sender;
+        owner = owner_;
     }
 
-    function enableToken(address token, address spender) external {
+    /// @notice This is called by the owner (set on deployment) to enable notionalV2 to be able
+    /// to transfer tokens from this contract.
+    function enableToken(address token) external {
         require(msg.sender == owner, "Unauthorized");
-        require(CTokenInterface(token).approve(spender, type(uint256).max));
+        require(CTokenInterface(token).approve(address(NotionalV2), type(uint256).max));
     }
 
     function migrateBorrowFromCompound(
