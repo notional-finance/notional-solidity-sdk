@@ -3,8 +3,11 @@ pragma solidity >0.7.0;
 
 import "./Constants.sol";
 import "./Types.sol";
+import "./SafeInt256.sol";
+import "./DateTime.sol";
 
 library EncodeDecode {
+    using SafeInt256 for int256;
 
     /// @notice Decodes asset ids
     function decodeERC1155Id(uint256 id)
@@ -133,5 +136,104 @@ library EncodeDecode {
                         (uint256(fCashAmountToSettle))
                 )
             );
+    }
+
+    function encodeOffsettingTrade(
+        int256 notional,
+        uint256 maturity,
+        uint256 blockTime
+    ) internal pure returns (bytes32, bool) {
+        if (notional == 0) return (bytes32(0), false);
+        (uint256 marketIndex, bool isIdiosyncratic) = DateTime.getMarketIndex(
+            Constants.MAX_TRADED_MARKET_INDEX,
+            maturity,
+            blockTime
+        );
+        // Cannot trade out of an idiosyncratic asset
+        if (isIdiosyncratic) (bytes32(0), false);
+
+        require(type(int88).min < notional && notional < type(int88).max);
+        if (notional > 0) {
+            return (encodeBorrowTrade(uint8(marketIndex), uint88(notional.abs()), 0), true);
+        } else {
+            return (encodeLendTrade(uint8(marketIndex), uint88(notional.abs()), 0), true);
+        }
+    }
+
+    function encodeOffsettingTradesFromPortfolio(
+        PortfolioAsset[] memory portfolio,
+        uint256 fCashCurrency,
+        uint256 blockTime
+    ) private returns (bytes32[] memory) {
+        uint256 numTrades;
+
+        bytes32[] memory trades = new bytes32[](portfolio.length);
+        for (uint256 i; i < portfolio.length; i++) {
+            PortfolioAsset memory asset = portfolio[i];
+            if (asset.currencyId != fCashCurrency) {
+                continue;
+            } else if (asset.assetType == Constants.FCASH_ASSET_TYPE) {
+                (bytes32 trade, bool success) = encodeOffsettingTrade(
+                    asset.notional,
+                    asset.maturity,
+                    blockTime
+                );
+
+                if (success) {
+                    trades[numTrades] = trade;
+                    numTrades++;
+                }
+            } else {
+                // If the token's settlement date is in the past, it will be settled and cannot be
+                // removed from the portfolio
+                uint256 settlementDate = DateTime.getSettlementDate(asset);
+                if (settlementDate <= blockTime) continue;
+
+                (uint256 marketIndex, /* bool isIdiosyncratic */) = DateTime.getMarketIndex(
+                    Constants.MAX_TRADED_MARKET_INDEX,
+                    asset.maturity,
+                    blockTime
+                );
+                require(0 < asset.notional && asset.notional < type(uint88).max);
+
+                trades[numTrades] = encodeRemoveLiquidity(
+                    uint8(marketIndex),
+                    uint88(uint256(asset.notional)),
+                    0, 0
+                );
+                numTrades++;
+            }
+        }
+
+        // Resize the trades array down to numTrades length
+        assembly { mstore(trades, sub(mload(trades), numTrades)) }
+        return trades;
+    }
+
+    function encodeOffsettingTradesFromArrays(
+        uint256[] memory fCashMaturities,
+        int256[] memory fCashNotional,
+        uint256 blockTime
+    ) internal pure returns (bytes32[] memory) {
+        require(fCashMaturities.length == fCashNotional.length, "Trade Length Mismatch");
+
+        uint256 numTrades;
+        bytes32[] memory trades = new bytes32[](fCashMaturities.length);
+        for (uint256 i; i < fCashNotional.length; i++) {
+            (bytes32 trade, bool success) = encodeOffsettingTrade(
+                fCashNotional[i],
+                fCashMaturities[i],
+                blockTime
+            );
+
+            if (success) {
+                trades[numTrades] = trade;
+                numTrades++;
+            }
+        }
+
+        // Resize the trades array down to numTrades length
+        assembly { mstore(trades, sub(mload(trades), numTrades)) }
+        return trades;
     }
 }
