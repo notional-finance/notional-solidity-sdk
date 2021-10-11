@@ -7,6 +7,7 @@ import "interfaces/notional/NotionalProxy.sol";
 import "interfaces/compound/CErc20Interface.sol";
 import "interfaces/compound/CEtherInterface.sol";
 import "interfaces/WETH9.sol";
+import "../lib/Addresses.sol";
 import "../lib/DateTime.sol";
 import "../lib/SafeInt256.sol";
 import "../lib/SafeToken.sol";
@@ -47,14 +48,11 @@ abstract contract NotionalV2BaseLiquidator {
     }
 
     constructor(
-        NotionalProxy notionalV2_,
-        address weth_,
-        address cETH_,
         address owner_
     ) {
-        NotionalV2 = notionalV2_;
-        WETH = weth_;
-        cETH = cETH_;
+        NotionalV2 = Addresses.getNotionalV2();
+        WETH = address(Addresses.getWETH());
+        cETH = address(Addresses.getCEth());
         OWNER = owner_;
     }
 

@@ -2,6 +2,7 @@
 pragma solidity ^0.7.0;
 pragma abicoder v2;
 
+import "../lib/Addresses.sol";
 import "interfaces/compound/CTokenInterface.sol";
 import "interfaces/compound/CErc20Interface.sol";
 import "interfaces/notional/NotionalProxy.sol";
@@ -13,7 +14,7 @@ contract CompoundToNotionalV2 is NotionalCallback {
     address public immutable owner;
 
     constructor(NotionalProxy notionalV2_, address owner_) {
-        NotionalV2 = notionalV2_;
+        NotionalV2 = Addresses.getNotionalV2();
         owner = owner_;
     }
 

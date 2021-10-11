@@ -3,6 +3,7 @@ pragma solidity ^0.7.0;
 pragma abicoder v2;
 
 import "../lib/Types.sol";
+import "../lib/Addresses.sol";
 import "interfaces/notional/NotionalProxy.sol";
 import "interfaces/notional/NotionalCallback.sol";
 import "interfaces/WETH9.sol";
@@ -74,18 +75,16 @@ contract NotionalV1ToNotionalV2 is NotionalCallback {
 
     constructor(
         IEscrow escrow_,
-        NotionalProxy notionalV2_,
         INotionalV1Erc1155 erc1155_,
-        WETH9 weth_,
         IERC20 wbtc_,
         uint16 v2Dai_,
         uint16 v2USDC_,
         uint16 v2WBTC_
     ) {
+        NotionalV2 = Addresses.getNotionalV2();
+        WETH = Addresses.getWETH();
         Escrow = escrow_;
-        NotionalV2 = notionalV2_;
         NotionalV1Erc1155 = erc1155_;
-        WETH = weth_;
         WBTC = wbtc_;
         V2_DAI = v2Dai_;
         V2_USDC = v2USDC_;

@@ -10,14 +10,11 @@ contract NotionalV2UniV3FlashLiquidator is NotionalV2FlashLiquidator {
     ISwapRouter public immutable UniV3SwapRouter;
 
     constructor(
-        NotionalProxy notionalV2_,
         address lendingPool_,
         address addressProvider_,
-        address weth_,
-        address cETH_,
         address owner_,
         ISwapRouter exchange_
-    ) NotionalV2FlashLiquidator(notionalV2_, lendingPool_, addressProvider_, weth_, cETH_, owner_) {
+    ) NotionalV2FlashLiquidator(lendingPool_, addressProvider_, owner_) {
         UniV3SwapRouter = exchange_;
     }
 

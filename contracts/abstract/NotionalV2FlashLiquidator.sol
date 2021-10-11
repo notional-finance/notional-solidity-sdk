@@ -22,13 +22,10 @@ abstract contract NotionalV2FlashLiquidator is NotionalV2BaseLiquidator, IFlashL
     address public ADDRESS_PROVIDER;
 
     constructor (
-        NotionalProxy notionalV2_,
         address lendingPool_,
         address addressProvider_,
-        address weth_,
-        address cETH_,
         address owner_
-    ) NotionalV2BaseLiquidator(notionalV2_, weth_, cETH_, owner_) {
+    ) NotionalV2BaseLiquidator(owner_) {
         LENDING_POOL = lendingPool_;
         ADDRESS_PROVIDER = addressProvider_;
     }
