@@ -1,12 +1,34 @@
-// SPDX-License-Identifier: GPL-3.0-only
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.7.0;
 pragma abicoder v2;
 
 import "./Constants.sol";
+import "./Types.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 library DateTime {
     using SafeMath for uint256;
+
+    function isLiquidityToken(uint256 assetType) internal pure returns (bool) {
+        return
+            assetType >= Constants.MIN_LIQUIDITY_TOKEN_INDEX &&
+            assetType <= Constants.MAX_LIQUIDITY_TOKEN_INDEX;
+    }
+
+    /// @notice Liquidity tokens settle every 90 days (not at the designated maturity). This method
+    /// calculates the settlement date for any PortfolioAsset.
+    function getSettlementDate(PortfolioAsset memory asset) internal pure returns (uint256) {
+        require(asset.assetType > 0 && asset.assetType <= Constants.MAX_LIQUIDITY_TOKEN_INDEX); // dev: settlement date invalid asset type
+        // 3 month tokens and fCash tokens settle at maturity
+        if (asset.assetType <= Constants.MIN_LIQUIDITY_TOKEN_INDEX) return asset.maturity;
+
+        uint256 marketLength = getTradedMarket(asset.assetType - 1);
+        // Liquidity tokens settle at tRef + 90 days. The formula to get a maturity is:
+        // maturity = tRef + marketLength
+        // Here we calculate:
+        // tRef = (maturity - marketLength) + 90 days
+        return asset.maturity.sub(marketLength).add(Constants.QUARTER);
+    }
 
     /// @notice Returns the current reference time which is how all the AMM dates are calculated.
     function getReferenceTime(uint256 blockTime) internal pure returns (uint256) {

@@ -6,16 +6,12 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "interfaces/notional/NotionalProxy.sol";
 import "interfaces/compound/CErc20Interface.sol";
 import "interfaces/compound/CEtherInterface.sol";
+import "interfaces/WETH9.sol";
+import "../lib/Addresses.sol";
 import "../lib/DateTime.sol";
 import "../lib/SafeInt256.sol";
-
-interface WETH9 {
-    function deposit() external payable;
-
-    function withdraw(uint256 wad) external;
-
-    function transfer(address dst, uint256 wad) external returns (bool);
-}
+import "../lib/SafeToken.sol";
+import "../lib/EncodeDecode.sol";
 
 abstract contract NotionalV2BaseLiquidator {
     using SafeInt256 for int256;
@@ -40,10 +36,10 @@ abstract contract NotionalV2BaseLiquidator {
         CrossCurrencyfCash_WithTransferFee_NoWithdraw
     }
 
-    NotionalProxy public NotionalV2;
+    NotionalProxy public immutable NotionalV2;
     mapping(address => address) underlyingToCToken;
-    address public WETH;
-    address public cETH;
+    address public immutable WETH;
+    address public immutable cETH;
     address public OWNER;
 
     modifier onlyOwner() {
@@ -52,19 +48,20 @@ abstract contract NotionalV2BaseLiquidator {
     }
 
     constructor(
-        NotionalProxy notionalV2_,
-        address weth_,
-        address cETH_,
         address owner_
     ) {
-        NotionalV2 = notionalV2_;
-        WETH = weth_;
-        cETH = cETH_;
+        NotionalV2 = Addresses.getNotionalV2();
+        WETH = address(Addresses.getWETH());
+        cETH = address(Addresses.getCEth());
         OWNER = owner_;
     }
 
-    function setNotionalProxy(NotionalProxy notionalV2_) external onlyOwner {
-        NotionalV2 = notionalV2_;
+    function wrapToWETH() public {
+        WETH9(WETH).deposit{value: address(this).balance}();
+    }
+
+    function withdraw(address token, uint256 amount) public {
+        IERC20(token).transfer(OWNER, amount);
     }
 
     function executeDexTrade(
@@ -74,12 +71,6 @@ abstract contract NotionalV2BaseLiquidator {
         uint256 amountOutMin,
         bytes memory params
     ) internal virtual returns(uint256);
-
-    function checkAllowanceOrSet(address erc20, address spender) internal {
-        if (IERC20(erc20).allowance(address(this), spender) < 2**128) {
-            IERC20(erc20).approve(spender, type(uint256).max);
-        }
-    }
 
     function _hasTransferFees(LiquidationAction action) internal pure returns (bool) {
         return (action == LiquidationAction.LocalCurrency_WithTransferFee_Withdraw ||
@@ -92,17 +83,26 @@ abstract contract NotionalV2BaseLiquidator {
             action == LiquidationAction.CrossCurrencyfCash_WithTransferFee_NoWithdraw);
     }
 
+    function _transferFeeDepositTokens(
+        address token,
+        uint16 currencyId
+    ) internal {
+        uint256 amount = IERC20(token).balanceOf(address(this));
+        SafeToken.checkAndSetMaxAllowance(token, address(NotionalV2));
+        NotionalV2.depositUnderlyingToken(address(this), currencyId, amount);
+    }
+
     function _mintCTokens(address[] calldata assets, uint256[] calldata amounts) internal {
         for (uint256 i; i < assets.length; i++) {
             if (assets[i] == WETH) {
                 // Withdraw WETH to ETH and mint CEth
                 WETH9(WETH).withdraw(amounts[i]);
-                CEtherInterface(cETH).mint{value: amounts[i]}();
+                SafeToken.mintCEth(cETH, amounts[i]);
             } else {
                 address cToken = underlyingToCToken[assets[i]];
                 if (cToken != address(0)) {
-                    checkAllowanceOrSet(assets[i], cToken);
-                    CErc20Interface(cToken).mint(amounts[i]);
+                    SafeToken.checkAndSetMaxAllowance(assets[i], cToken);
+                    SafeToken.mintCToken(cToken, amounts[i]);
                 }
             }
         }
@@ -114,11 +114,9 @@ abstract contract NotionalV2BaseLiquidator {
             address cToken = assets[i] == WETH ? cETH : underlyingToCToken[assets[i]];
             if (cToken == address(0)) continue;
 
-            CErc20Interface(cToken).redeem(IERC20(cToken).balanceOf(address(this)));
+            SafeToken.redeemCTokenEntireBalance(cToken);
             // Wrap ETH into WETH for repayment
-            if (assets[i] == WETH && address(this).balance > 0) {
-                WETH9(WETH).deposit{value: address(this).balance}();
-            }
+            if (assets[i] == WETH && address(this).balance > 0) wrapToWETH();
         }
     }
 
@@ -135,12 +133,7 @@ abstract contract NotionalV2BaseLiquidator {
             uint96 maxNTokenLiquidation
         ) = abi.decode(params, (uint8, address, uint16, uint96));
 
-        if (_hasTransferFees(action)) {
-            // NOTE: This assumes that the first asset flash borrowed is the one with transfer fees
-            uint256 amount = IERC20(assets[0]).balanceOf(address(this));
-            checkAllowanceOrSet(assets[0], address(NotionalV2));
-            NotionalV2.depositUnderlyingToken(address(this), uint16(localCurrency), amount);
-        }
+        if (_hasTransferFees(action)) _transferFeeDepositTokens(assets[0], localCurrency);
 
         // prettier-ignore
         (
@@ -171,12 +164,7 @@ abstract contract NotionalV2BaseLiquidator {
             uint96 maxNTokenLiquidation
         ) = abi.decode(params, (uint8, address, uint16, address, uint16, address, address, uint128, uint96));
 
-        if (_hasTransferFees(action)) {
-            // NOTE: This assumes that the first asset flash borrowed is the one with transfer fees
-            uint256 amount = IERC20(assets[0]).balanceOf(address(this));
-            checkAllowanceOrSet(assets[0], address(NotionalV2));
-            NotionalV2.depositUnderlyingToken(address(this), uint16(localCurrency), amount);
-        }
+        if (_hasTransferFees(action)) _transferFeeDepositTokens(assets[0], localCurrency);
 
         // prettier-ignore
         (
@@ -195,13 +183,10 @@ abstract contract NotionalV2BaseLiquidator {
 
         // Redeem to underlying for collateral because it needs to be traded on the DEX
         _redeemAndWithdraw(collateralCurrency, uint96(collateralNTokens), true);
-
-        CErc20Interface(collateralAddress).redeem(
-            IERC20(collateralAddress).balanceOf(address(this))
-        );
+        SafeToken.redeemCTokenEntireBalance(collateralAddress);
 
         // Wrap everything to WETH for trading
-        if (collateralCurrency == 1) WETH9(WETH).deposit{value: address(this).balance}();
+        if (collateralCurrency == Constants.ETH_CURRENCY_ID) wrapToWETH();
 
         // Will withdraw all cash balance, no need to redeem local currency, it will be
         // redeemed later
@@ -222,12 +207,7 @@ abstract contract NotionalV2BaseLiquidator {
             uint256[] memory maxfCashLiquidateAmounts
         ) = abi.decode(params, (uint8, address, uint16, uint256[], uint256[]));
 
-        if (_hasTransferFees(action)) {
-            // NOTE: This assumes that the first asset flash borrowed is the one with transfer fees
-            uint256 amount = IERC20(assets[0]).balanceOf(address(this));
-            checkAllowanceOrSet(assets[0], address(NotionalV2));
-            NotionalV2.depositUnderlyingToken(address(this), localCurrency, amount);
-        }
+        if (_hasTransferFees(action)) _transferFeeDepositTokens(assets[0], localCurrency);
 
         // prettier-ignore
         (
@@ -274,12 +254,7 @@ abstract contract NotionalV2BaseLiquidator {
             (uint8, address, uint16, address, uint16, address, address, uint256[], uint256[])
         );
 
-        if (_hasTransferFees(action)) {
-            // NOTE: This assumes that the first asset flash borrowed is the one with transfer fees
-            uint256 amount = IERC20(assets[0]).balanceOf(address(this));
-            checkAllowanceOrSet(assets[0], address(NotionalV2));
-            NotionalV2.depositUnderlyingToken(address(this), localCurrency, amount);
-        }
+        if (_hasTransferFees(action)) _transferFeeDepositTokens(assets[0], localCurrency);
 
         // prettier-ignore
         (
@@ -296,9 +271,9 @@ abstract contract NotionalV2BaseLiquidator {
         // Redeem to underlying here, collateral is not specified as an input asset
         _sellfCashAssets(fCashCurrency, fCashMaturities, fCashNotionalTransfers, 0, true);
         // Wrap everything to WETH for trading
-        if (fCashCurrency == 1) WETH9(WETH).deposit{value: address(this).balance}();
+        if (fCashCurrency == Constants.ETH_CURRENCY_ID) wrapToWETH();
 
-        // NOTE: no withdraw if _hasTransferFees, _sellfCashAssets with withdraw everything
+        // NOTE: no withdraw if _hasTransferFees, _sellfCashAssets will withdraw everything
     }
 
     function _sellfCashAssets(
@@ -317,38 +292,11 @@ abstract contract NotionalV2BaseLiquidator {
         action[0].currencyId = fCashCurrency;
         action[0].withdrawEntireCashBalance = true;
         action[0].redeemToUnderlying = redeemToUnderlying;
-
-        uint256 numTrades;
-        bytes32[] memory trades = new bytes32[](fCashMaturities.length);
-        for (uint256 i; i < fCashNotional.length; i++) {
-            if (fCashNotional[i] == 0) continue;
-            (uint256 marketIndex, bool isIdiosyncratic) = DateTime.getMarketIndex(
-                7,
-                fCashMaturities[i],
-                blockTime
-            );
-            // We don't trade it out here but if the contract does take on idiosyncratic cash we need to be careful
-            if (isIdiosyncratic) continue;
-
-            trades[numTrades] = bytes32(
-                (uint256(fCashNotional[i] > 0 ? TradeActionType.Borrow : TradeActionType.Lend) <<
-                    248) |
-                    (marketIndex << 240) |
-                    (uint256(uint88(fCashNotional[i].abs())) << 152)
-            );
-            numTrades++;
-        }
-
-        if (numTrades < trades.length) {
-            // Shrink the trades array to length if it is not full
-            bytes32[] memory newTrades = new bytes32[](numTrades);
-            for (uint256 i; i < numTrades; i++) {
-                newTrades[i] = trades[i];
-            }
-            action[0].trades = newTrades;
-        } else {
-            action[0].trades = trades;
-        }
+        action[0].trades = EncodeDecode.encodeOffsettingTradesFromArrays(
+            fCashMaturities,
+            fCashNotional,
+            blockTime
+        );
 
         NotionalV2.batchBalanceAndTradeAction(address(this), action);
     }
@@ -368,13 +316,5 @@ abstract contract NotionalV2BaseLiquidator {
         action[0].withdrawEntireCashBalance = true;
         action[0].redeemToUnderlying = redeemToUnderlying;
         NotionalV2.batchBalanceAction(address(this), action);
-    }
-
-    function wrap() public {
-        WETH9(WETH).deposit{value: address(this).balance}();
-    }
-
-    function withdraw(address token, uint256 amount) public {
-        IERC20(token).transfer(OWNER, amount);
     }
 }

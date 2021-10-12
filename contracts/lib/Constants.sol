@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-only
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.7.0;
 
 /// @title All shared constants for the Notional system should be declared here.
@@ -22,8 +22,6 @@ library Constants {
 
     // Address of the reserve account
     address internal constant RESERVE = address(0);
-    // NOTE: this address is hardcoded in the library, must update this on deployment
-    address constant NOTE_TOKEN_ADDRESS = 0x7EaEceb29Fb4eB4277E2761cE3607DF3e73f2d3e;
 
     // Most significant bit
     bytes32 internal constant MSB =
@@ -44,7 +42,7 @@ library Constants {
     uint256 internal constant MONTH = WEEK * 5;
     uint256 internal constant QUARTER = MONTH * 3;
     uint256 internal constant YEAR = QUARTER * 4;
-    
+
     // These constants are used in DateTime.sol
     uint256 internal constant DAYS_IN_WEEK = 6;
     uint256 internal constant DAYS_IN_MONTH = 30;
