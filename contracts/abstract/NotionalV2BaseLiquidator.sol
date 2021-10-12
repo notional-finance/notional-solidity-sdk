@@ -22,14 +22,14 @@ abstract contract NotionalV2BaseLiquidator {
         CollateralCurrency_NoTransferFee_Withdraw,
         LocalfCash_NoTransferFee_Withdraw,
         CrossCurrencyfCash_NoTransferFee_Withdraw,
-        LocalCurrency_WithTransferFee_Withdraw,
-        CollateralCurrency_WithTransferFee_Withdraw,
-        LocalfCash_WithTransferFee_Withdraw,
-        CrossCurrencyfCash_WithTransferFee_Withdraw,
         LocalCurrency_NoTransferFee_NoWithdraw,
         CollateralCurrency_NoTransferFee_NoWithdraw,
         LocalfCash_NoTransferFee_NoWithdraw,
         CrossCurrencyfCash_NoTransferFee_NoWithdraw,
+        LocalCurrency_WithTransferFee_Withdraw,
+        CollateralCurrency_WithTransferFee_Withdraw,
+        LocalfCash_WithTransferFee_Withdraw,
+        CrossCurrencyfCash_WithTransferFee_Withdraw,
         LocalCurrency_WithTransferFee_NoWithdraw,
         CollateralCurrency_WithTransferFee_NoWithdraw,
         LocalfCash_WithTransferFee_NoWithdraw,
@@ -56,14 +56,6 @@ abstract contract NotionalV2BaseLiquidator {
         OWNER = owner_;
     }
 
-    function wrapToWETH() public {
-        WETH9(WETH).deposit{value: address(this).balance}();
-    }
-
-    function withdraw(address token, uint256 amount) public {
-        IERC20(token).transfer(OWNER, amount);
-    }
-
     function executeDexTrade(
         address from,
         address to,
@@ -73,14 +65,7 @@ abstract contract NotionalV2BaseLiquidator {
     ) internal virtual returns(uint256);
 
     function _hasTransferFees(LiquidationAction action) internal pure returns (bool) {
-        return (action == LiquidationAction.LocalCurrency_WithTransferFee_Withdraw ||
-            action == LiquidationAction.LocalCurrency_WithTransferFee_NoWithdraw ||
-            action == LiquidationAction.CollateralCurrency_WithTransferFee_Withdraw ||
-            action == LiquidationAction.CollateralCurrency_WithTransferFee_NoWithdraw ||
-            action == LiquidationAction.LocalfCash_WithTransferFee_Withdraw ||
-            action == LiquidationAction.LocalfCash_WithTransferFee_NoWithdraw ||
-            action == LiquidationAction.CrossCurrencyfCash_WithTransferFee_Withdraw ||
-            action == LiquidationAction.CrossCurrencyfCash_WithTransferFee_NoWithdraw);
+        return action >= LiquidationAction.LocalCurrency_WithTransferFee_Withdraw;
     }
 
     function _transferFeeDepositTokens(
@@ -116,7 +101,7 @@ abstract contract NotionalV2BaseLiquidator {
 
             SafeToken.redeemCTokenEntireBalance(cToken);
             // Wrap ETH into WETH for repayment
-            if (assets[i] == WETH && address(this).balance > 0) wrapToWETH();
+            if (assets[i] == WETH && address(this).balance > 0) _wrapToWETH();
         }
     }
 
@@ -186,7 +171,7 @@ abstract contract NotionalV2BaseLiquidator {
         SafeToken.redeemCTokenEntireBalance(collateralAddress);
 
         // Wrap everything to WETH for trading
-        if (collateralCurrency == Constants.ETH_CURRENCY_ID) wrapToWETH();
+        if (collateralCurrency == Constants.ETH_CURRENCY_ID) _wrapToWETH();
 
         // Will withdraw all cash balance, no need to redeem local currency, it will be
         // redeemed later
@@ -271,9 +256,13 @@ abstract contract NotionalV2BaseLiquidator {
         // Redeem to underlying here, collateral is not specified as an input asset
         _sellfCashAssets(fCashCurrency, fCashMaturities, fCashNotionalTransfers, 0, true);
         // Wrap everything to WETH for trading
-        if (fCashCurrency == Constants.ETH_CURRENCY_ID) wrapToWETH();
+        if (fCashCurrency == Constants.ETH_CURRENCY_ID) _wrapToWETH();
 
         // NOTE: no withdraw if _hasTransferFees, _sellfCashAssets will withdraw everything
+    }
+
+    function _wrapToWETH() internal {
+        WETH9(WETH).deposit{value: address(this).balance}();
     }
 
     function _sellfCashAssets(

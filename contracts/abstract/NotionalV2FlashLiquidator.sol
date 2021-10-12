@@ -213,5 +213,13 @@ abstract contract NotionalV2FlashLiquidator is NotionalV2BaseLiquidator, IFlashL
         );
     }
 
+    function wrapToWETH() public {
+        _wrapToWETH();
+    }
+
+    function withdraw(address token, uint256 amount) public {
+        IERC20(token).transfer(OWNER, amount);
+    }
+    
     receive() external payable {}
 }
