@@ -119,7 +119,6 @@ contract WrappedLender is AllowfCashReceiver {
         // If this fails then we've hit some strange system error, settlement rates should never be zero.
         require(settlementRate.rate > 0, "Settlement rate error");
 
-        // Update the account's fCash balance
         uint256 fCashBalance = accountfCashBalance[msg.sender];
         require(fCashBalance > 0, "No fcash balance");
         // Delete fCash balance to prevent double withdraws
