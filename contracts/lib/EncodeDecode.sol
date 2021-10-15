@@ -9,6 +9,22 @@ import "./DateTime.sol";
 library EncodeDecode {
     using SafeInt256 for int256;
 
+    function convertToExternal(
+        int256 amount,
+        int256 decimals
+    ) internal pure returns (int256) {
+        if (decimals == Constants.INTERNAL_TOKEN_PRECISION) return amount;
+        return amount.mul(decimals).div(Constants.INTERNAL_TOKEN_PRECISION);
+    }
+
+    function convertToInternal(
+        int256 amount,
+        int256 decimals
+    ) internal pure returns (int256) {
+        if (decimals == Constants.INTERNAL_TOKEN_PRECISION) return amount;
+        return amount.mul(Constants.INTERNAL_TOKEN_PRECISION).div(decimals);
+    }
+
     /// @notice Decodes asset ids
     function decodeERC1155Id(uint256 id)
         internal

@@ -17,9 +17,7 @@ abstract contract AllowfCashReceiver {
         uint256 _id,
         uint256 _value,
         bytes calldata _data
-    ) external pure returns (bytes4) {
-        return ERC1155_ACCEPTED;
-    }
+    ) external virtual returns (bytes4);
 
     function onERC1155BatchReceived(
         address _operator,
@@ -27,7 +25,5 @@ abstract contract AllowfCashReceiver {
         uint256[] calldata _ids,
         uint256[] calldata _values,
         bytes calldata _data
-    ) external pure returns (bytes4) {
-        return ERC1155_BATCH_ACCEPTED;
-    }
+    ) external virtual returns (bytes4);
 }

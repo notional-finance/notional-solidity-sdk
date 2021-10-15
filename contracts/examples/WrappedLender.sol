@@ -6,148 +6,129 @@ import "../lib/AssetRate.sol";
 import "../lib/Addresses.sol";
 import "../lib/EncodeDecode.sol";
 import "../lib/Types.sol";
-import "interfaces/notional/NotionalCallback.sol";
+import "../abstract/AllowfCashReceiver.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract WrappedLender is NotionalCallback, KovanAddresses {
+contract WrappedLender is AllowfCashReceiver {
     using AssetRate for AssetRateParameters;
+    using SafeMath for uint256;
 
-    uint16 public immutable NOTIONAL_CURRENCY_ID;
+    NotionalProxy public immutable NotionalV2;
+    uint16 public immutable CURRENCY_ID;
     uint32 public immutable FCASH_MATURITY;
+    uint256 public immutable FCASH_ID;
+    IERC20 internal immutable underlyingToken;
+    IERC20 internal immutable assetToken;
+    int256 internal immutable underlyingDecimals;
+    int256 internal immutable assetDecimals;
 
-    uint256 public totalfCashBalance;
     mapping(address => uint256) public accountfCashBalance;
 
     constructor (uint16 currencyId, uint32 maturity) {
-        NOTIONAL_CURRENCY_ID = currencyId;
+        NotionalProxy proxy = Addresses.getNotionalV2();
+        (Token memory underlying, Token memory asset) = proxy.getCurrency(currencyId);
+        underlyingToken = IERC20(underlying.tokenAddress);
+        underlyingDecimals = underlying.decimals;
+        assetToken = IERC20(asset.tokenAddress);
+        assetDecimals = asset.decimals;
+
+        NotionalV2 = proxy;
+        CURRENCY_ID = currencyId;
         FCASH_MATURITY = maturity;
+        FCASH_ID = EncodeDecode.encodeERC1155Id(currencyId, maturity, Constants.FCASH_ASSET_TYPE);
+    }
+
+    function onERC1155Received(
+        address _operator,
+        address _from,
+        uint256 _id,
+        uint256 _value,
+        bytes calldata _data
+    ) external override returns (bytes4) {
+        // Only accept erc1155 transfers from NotionalV2
+        require(msg.sender == address(NotionalV2), "Invalid caller");
+        // Only accept the fcash id that corresponds to the listed currency and maturity
+        require(_id == FCASH_ID, "Invalid fCash asset");
+        // Protect against signed value underflows
+        require(int256(_value) > 0, "Invalid value");
+
+        // Double check the account's position, these are not strictly necessary and add gas costs
+        // but might be good safe guards
+        AccountContext memory ac = NotionalV2.getAccountContext(address(this));
+        require(ac.hasDebt == 0x00, "Incurred debt");
+        PortfolioAsset[] memory assets = NotionalV2.getAccountPortfolio(address(this));
+        require(assets.length == 1, "Invalid assets");
+        require(EncodeDecode.encodeERC1155Id(
+            assets[0].currencyId,
+            assets[0].maturity,
+            assets[0].assetType
+        ) == FCASH_ID, "Invalid portfolio asset");
+
+
+        // Update per account fCash balance
+        uint256 fCashBalance = accountfCashBalance[_from];
+        accountfCashBalance[_from] = fCashBalance.add(_value);
+
+        // TODO: at this point the contract can accept payment for insurance
+    }
+
+    function onERC1155BatchReceived(
+        address _operator,
+        address _from,
+        uint256[] calldata _ids,
+        uint256[] calldata _values,
+        bytes calldata _data
+    ) external override returns (bytes4) {
+        // Do not accept batches of fCash
+        return 0;
     }
 
     function withdrawCash(bool redeemToUnderlying) external {
         require(FCASH_MATURITY < block.timestamp, "fCash not matured");
         AssetRateParameters memory settlementRate = NotionalV2.getSettlementRate(
-            NOTIONAL_CURRENCY_ID,
+            CURRENCY_ID,
             FCASH_MATURITY
         );
-        // If the settlement rate has not been set yet, anyone can call settleAccount on NotionalV2 to
-        // ensure that it gets set system wide.
-        require(settlementRate.rate > 0, "Settlement Rate not set");
+
+        if (settlementRate.rate == 0) {
+            // If the settlement rate has not been set yet, settle the account to fetch it.
+            NotionalV2.settleAccount(address(this));
+            // Re-fetch the settlement rate now, it has been set
+            settlementRate = NotionalV2.getSettlementRate(
+                CURRENCY_ID,
+                FCASH_MATURITY
+            );
+        }
+        // If this fails then we've hit some strange system error
+        require(settlementRate.rate > 0, "Settlement rate error");
 
         uint256 fCashBalance = accountfCashBalance[msg.sender];
         // This is the amount of cash that the user's fCash has settled to
         int256 notionalCashBalance = settlementRate.convertFromUnderlying(SafeInt256.toInt(fCashBalance));
-        require(0 < notionalCashBalance && notionalCashBalance <= type(uint88).max);
+        require(1 < notionalCashBalance && notionalCashBalance <= type(uint88).max);
+
+        // Subtract one to account for any rounding errors, we don't want dust amounts to accrue and cause
+        // withdraws to fail for the last user that withdraws
+        notionalCashBalance = notionalCashBalance - 1;
 
         // If this fails, then there is some issue. If redeem to underlying fails then there is an
         // issue with Compound.
-        NotionalV2.withdraw(NOTIONAL_CURRENCY_ID, uint88(notionalCashBalance), redeemToUnderlying);
-    }
+        NotionalV2.withdraw(CURRENCY_ID, uint88(notionalCashBalance), redeemToUnderlying);
 
-    /// @notice When calling this method, the contract will lend the specified fCashAmount in the corresponding
-    /// market for the designated currency. Expects that the msg.sender has already approved ERC20 transfers for
-    /// the NotionalV2 address (not this contract).
-    /// @param depositAmount the amount of cTokens to deposit for lending in cToken decimal precision
-    /// @param marketIndex the index of the market to lend on (1 = 3 months, 2 = 6 months, 3 = 1 year, etc)
-    /// @param fCashAmount the amount of fCash to lend into the market, corresponds to the amount of underlying
-    /// that the account will receive at maturity
-    /// @param minImpliedRate the minimum interest rate that the account will lend at for slippage protection
-    function lendWrappedUsingCToken(
-        uint256 depositAmount,
-        uint8 marketIndex, // NOTE: may want to consider limiting the wrapper to only having 1 market index
-        uint88 fCashAmount,
-        uint32 minImpliedRate
-    ) external {
-        _lendWrapped(DepositActionType.DepositAsset, depositAmount, marketIndex, fCashAmount, minImpliedRate);
-    }
-
-    /// @notice When calling this method, the contract will lend the specified fCashAmount in the corresponding
-    /// market for the designated currency. Expects that the msg.sender has already approved ERC20 transfers for
-    /// the NotionalV2 address (not this contract).
-    /// @param depositAmount the amount of underlying to deposit in the token's native precision, will be converted
-    /// to cTokens by the NotionalV2 contract
-    /// @param marketIndex the index of the market to lend on (1 = 3 months, 2 = 6 months, 3 = 1 year, etc)
-    /// @param fCashAmount the amount of fCash to lend into the market, corresponds to the amount of underlying
-    /// that the account will receive at maturity
-    /// @param minImpliedRate the minimum interest rate that the account will lend at for slippage protection
-    function lendWrappedUsingUnderlying(
-        uint256 depositAmount,
-        uint8 marketIndex,
-        uint88 fCashAmount,
-        uint32 minImpliedRate
-    ) external {
-        _lendWrapped(DepositActionType.DepositUnderlying, depositAmount, marketIndex, fCashAmount, minImpliedRate);
-    }
-
-    /// @dev Issues a lend trade on NotionalV2. NotionalV2 will do the following:
-    ///     - Transfer depositAmount ERC20 tokens from the account
-    ///     - Lend fCashAmount at marketIndex, reverting if the interest rate drops below minImpliedRate
-    ///     - Place the corresponding fCash asset in msg.sender's account
-    ///     - Withdraw any residual depositAmount left after lending back to msg.sender's wallet
-    ///     - Issue a callback to this contract
-    ///     - After callback returns, will perform a free collateral check if necessary
-    function _lendWrapped(
-        DepositActionType actionType,
-        uint256 depositAmount,
-        uint8 marketIndex,
-        uint88 fCashAmount,
-        uint32 minImpliedRate
-    ) internal {
-        /**
-         * A better option might be to have the wrapper take the token and hold the fCash, in this
-         * case the wrapper contract gets the ERC20 token approval:
-         *   token.transferFrom(msg.sender, address(this), depositAmount)
-         *
-         *   ... same batch action generation
-         *
-         *   uint256 balanceBefore = token.balanceOf(address(this))
-         *   int256 fCashBalanceBefore = notionalV2.signedBalanceOf(address(this), FCASH_ID)
-         *   // Maybe check this against the previously recorded balance...
-         *
-         *   // No callback here, the fCash asset gets put into this wrapper contract
-         *   notionalV2.batchBalanceAndTradeAction(address(this), actions)
-         *
-         *   int256 fCashBalanceAfter = notionalV2.signedBalanceOf(address(this), FCASH_ID)
-         *   uint256 balanceAfter = token.balanceOf(address(this))
-         *  
-         *   // Refund the residual back to the sender
-         *   uint256 residual = balanceBefore - balanceAfter;
-         *   token.transfer(msg.sender, residual)
-         *
-         *   there is no callback here, just need to validate the new fCash position and then
-         *   update some internal mapping for fCash balances.
-         */
-
-
-        BalanceActionWithTrades[] memory actions = new BalanceActionWithTrades[](1);
-        actions[0] = BalanceActionWithTrades({
-            actionType: actionType,
-            currencyId: NOTIONAL_CURRENCY_ID,
-            // This deposit amount should be denominated in the token's native precision
-            depositActionAmount: depositAmount,
-            withdrawAmountInternalPrecision: 0,
-            // Withdraw any residuals from lending back to msg.sender
-            withdrawEntireCashBalance: true,
-            // If using the underlying, ensure that msg.sender gets the underlying back after withdraw
-            redeemToUnderlying: actionType == DepositActionType.DepositUnderlying ? true : false,
-            trades: new bytes32[](1)
-        });
-        actions[0].trades[0] = EncodeDecode.encodeLendTrade(marketIndex, fCashAmount, minImpliedRate);
-
-        // Expect that msg.sender has authorized Notional V2 to transferFrom their wallet
-        NotionalV2.batchBalanceAndTradeActionWithCallback(msg.sender, actions, "");
-    }
-
-    function notionalCallback(
-        address sender,
-        address account,
-        bytes calldata callbackdata
-    ) external override {
-        require(msg.sender == address(NotionalV2) && sender == address(this), "Unauthorized callback");
-
-        // TODO: perform any validation logic here
-        AccountContext memory context = NotionalV2.getAccountContext(account);
-        // Likely want to ensure that the account has not borrowed
-        require(context.hasDebt == 0x00);
-
-        // TODO: maybe want to supply some callbackdata to record fCash amount or anything like that...
+        if (redeemToUnderlying) {
+            uint256 fCashBalanceExternal = SafeInt256.toUint(EncodeDecode.convertToExternal(SafeInt256.toInt(fCashBalance), underlyingDecimals));
+            uint256 underlyingBalance = underlyingToken.balanceOf(address(this));
+            // NOTE: If this fails, can initiate a claim...
+            require(underlyingBalance >= fCashBalance, "Insufficient underlying");
+            underlyingToken.transfer(msg.sender, fCashBalanceExternal);
+        } else {
+            // Underflow checked above
+            uint256 cashBalanceExternal = SafeInt256.toUint(EncodeDecode.convertToExternal(notionalCashBalance, assetDecimals));
+            uint256 assetCashBalance = assetToken.balanceOf(address(this));
+            // NOTE: If this fails, can initiate a claim...
+            require(cashBalanceExternal == assetCashBalance, "Insufficient asset cash");
+            assetToken.transfer(msg.sender, assetCashBalance);
+        }
     }
 }
