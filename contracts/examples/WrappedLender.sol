@@ -14,17 +14,24 @@ contract WrappedLender is AllowfCashReceiver {
     using AssetRate for AssetRateParameters;
     using SafeMath for uint256;
 
+    /// address to the NotionalV2 system
     NotionalProxy public immutable NotionalV2;
+    /// @dev deployment time constants that restrict the insured fcash asset
     uint16 public immutable CURRENCY_ID;
     uint32 public immutable FCASH_MATURITY;
     uint256 public immutable FCASH_ID;
+
+    /// @dev token configuration from NotionalV2
     IERC20 internal immutable underlyingToken;
     IERC20 internal immutable assetToken;
     int256 internal immutable underlyingDecimals;
     int256 internal immutable assetDecimals;
 
+    /// @dev tracks each insured account's fcash balance
     mapping(address => uint256) public accountfCashBalance;
 
+    /// @notice At deployment this contract will configure itself to a specific
+    /// currency and maturity. It will only receive fCash of this configured maturity
     constructor (uint16 currencyId, uint32 maturity) {
         NotionalProxy proxy = Addresses.getNotionalV2();
         (Token memory underlying, Token memory asset) = proxy.getCurrency(currencyId);
@@ -39,6 +46,8 @@ contract WrappedLender is AllowfCashReceiver {
         FCASH_ID = EncodeDecode.encodeERC1155Id(currencyId, maturity, Constants.FCASH_ASSET_TYPE);
     }
 
+    /// @notice This hook will be called every time this contract receives fCash, will validate that
+    /// this is the correct fCash and also validates the contract's portfolio integrity
     function onERC1155Received(
         address _operator,
         address _from,
@@ -55,6 +64,7 @@ contract WrappedLender is AllowfCashReceiver {
 
         // Double check the account's position, these are not strictly necessary and add gas costs
         // but might be good safe guards
+        // THIS SECTION IS NOT STRICTLY NECESSARY
         AccountContext memory ac = NotionalV2.getAccountContext(address(this));
         require(ac.hasDebt == 0x00, "Incurred debt");
         PortfolioAsset[] memory assets = NotionalV2.getAccountPortfolio(address(this));
@@ -64,13 +74,16 @@ contract WrappedLender is AllowfCashReceiver {
             assets[0].maturity,
             assets[0].assetType
         ) == FCASH_ID, "Invalid portfolio asset");
-
+        // ABOVE SECTION IS NOT STRICTLY NECESSARY
 
         // Update per account fCash balance
         uint256 fCashBalance = accountfCashBalance[_from];
         accountfCashBalance[_from] = fCashBalance.add(_value);
 
-        // TODO: at this point the contract can accept payment for insurance
+        // TODO: at this point the contract can pull payment for insurance
+
+        // This will allow the fCash to be accepted
+        return ERC1155_ACCEPTED;
     }
 
     function onERC1155BatchReceived(
@@ -84,6 +97,9 @@ contract WrappedLender is AllowfCashReceiver {
         return 0;
     }
 
+
+    // The insured account can call this method to withdraw cash. If this reverts beyond the first
+    // require statement then you can file a claim.
     function withdrawCash(bool redeemToUnderlying) external {
         require(FCASH_MATURITY < block.timestamp, "fCash not matured");
         AssetRateParameters memory settlementRate = NotionalV2.getSettlementRate(
@@ -92,7 +108,7 @@ contract WrappedLender is AllowfCashReceiver {
         );
 
         if (settlementRate.rate == 0) {
-            // If the settlement rate has not been set yet, settle the account to fetch it.
+            // If the settlement rate has not been set yet, settle the account to set it.
             NotionalV2.settleAccount(address(this));
             // Re-fetch the settlement rate now, it has been set
             settlementRate = NotionalV2.getSettlementRate(
@@ -100,21 +116,25 @@ contract WrappedLender is AllowfCashReceiver {
                 FCASH_MATURITY
             );
         }
-        // If this fails then we've hit some strange system error
+        // If this fails then we've hit some strange system error, settlement rates should never be zero.
         require(settlementRate.rate > 0, "Settlement rate error");
 
+        // Update the account's fCash balance
         uint256 fCashBalance = accountfCashBalance[msg.sender];
+        require(fCashBalance > 0, "No fcash balance");
+        // Delete fCash balance to prevent double withdraws
+        delete accountfCashBalance[msg.sender];
+
         // This is the amount of cash that the user's fCash has settled to
-        int256 notionalCashBalance = settlementRate.convertFromUnderlying(SafeInt256.toInt(fCashBalance));
-        require(1 < notionalCashBalance && notionalCashBalance <= type(uint88).max);
+        int256 cashBalance = settlementRate.convertFromUnderlying(SafeInt256.toInt(fCashBalance));
+        require(1 < cashBalance && cashBalance <= type(uint88).max);
 
         // Subtract one to account for any rounding errors, we don't want dust amounts to accrue and cause
-        // withdraws to fail for the last user that withdraws
-        notionalCashBalance = notionalCashBalance - 1;
+        // withdraws to fail for the last user that withdraws.
+        cashBalance = cashBalance - 1;
 
-        // If this fails, then there is some issue. If redeem to underlying fails then there is an
-        // issue with Compound.
-        NotionalV2.withdraw(CURRENCY_ID, uint88(notionalCashBalance), redeemToUnderlying);
+        // NOTE: If this fails, then there is some issue and can initiate a claim
+        NotionalV2.withdraw(CURRENCY_ID, uint88(cashBalance), redeemToUnderlying);
 
         if (redeemToUnderlying) {
             uint256 fCashBalanceExternal = SafeInt256.toUint(EncodeDecode.convertToExternal(SafeInt256.toInt(fCashBalance), underlyingDecimals));
@@ -124,11 +144,15 @@ contract WrappedLender is AllowfCashReceiver {
             underlyingToken.transfer(msg.sender, fCashBalanceExternal);
         } else {
             // Underflow checked above
-            uint256 cashBalanceExternal = SafeInt256.toUint(EncodeDecode.convertToExternal(notionalCashBalance, assetDecimals));
+            uint256 cashBalanceExternal = SafeInt256.toUint(EncodeDecode.convertToExternal(cashBalance, assetDecimals));
             uint256 assetCashBalance = assetToken.balanceOf(address(this));
             // NOTE: If this fails, can initiate a claim...
             require(cashBalanceExternal == assetCashBalance, "Insufficient asset cash");
             assetToken.transfer(msg.sender, assetCashBalance);
         }
+
+        // Sanity checks to make sure we don't lose tokens
+        require(assetToken.balanceOf(address(this)) == 0);
+        require(underlyingToken.balanceOf(address(this)) == 0);
     }
 }
