@@ -1,11 +1,46 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >0.7.0;
 
+import "./Constants.sol";
 import "./Types.sol";
+import "./SafeInt256.sol";
+import "./DateTime.sol";
 
 library EncodeDecode {
-    // function encodeERC1155ID()
-    // function decodeERC1155ID()
+    using SafeInt256 for int256;
+
+    /// @notice Decodes asset ids
+    function decodeERC1155Id(uint256 id)
+        internal
+        pure
+        returns (
+            uint256 currencyId,
+            uint256 maturity,
+            uint256 assetType
+        )
+    {
+        assetType = uint8(id);
+        maturity = uint40(id >> 8);
+        currencyId = uint16(id >> 48);
+    }
+
+    /// @notice Encodes asset ids
+    function encodeERC1155Id(
+        uint256 currencyId,
+        uint256 maturity,
+        uint256 assetType
+    ) internal pure returns (uint256) {
+        require(currencyId <= Constants.MAX_CURRENCIES);
+        require(maturity <= type(uint40).max);
+        require(assetType <= Constants.MAX_LIQUIDITY_TOKEN_INDEX);
+
+        return
+            uint256(
+                (bytes32(uint256(uint16(currencyId))) << 48) |
+                (bytes32(uint256(uint40(maturity))) << 8) |
+                bytes32(uint256(uint8(assetType)))
+            );
+    }
 
     function encodeLendTrade(
         uint8 marketIndex,
@@ -23,23 +58,182 @@ library EncodeDecode {
             );
     }
 
-    // function decodeLendTrade()
+    function encodeBorrowTrade(
+        uint8 marketIndex,
+        uint88 fCashAmount,
+        uint32 maxImpliedRate
+    ) internal pure returns (bytes32) {
+        return
+            bytes32(
+                uint256(
+                    (uint8(TradeActionType.Borrow) << 248) |
+                        (marketIndex << 240) |
+                        (fCashAmount << 152) |
+                        (maxImpliedRate << 120)
+                )
+            );
+    }
 
-    // function encodeBorrowTrade()
-    // function decodeBorrowTrade()
+    function encodeAddLiquidity(
+        uint8 marketIndex,
+        uint88 assetCashAmount,
+        uint32 minImpliedRate,
+        uint32 maxImpliedRate
+    ) internal pure returns (bytes32) {
+        return
+            bytes32(
+                uint256(
+                    (uint8(TradeActionType.AddLiquidity) << 248) |
+                        (marketIndex << 240) |
+                        (assetCashAmount << 152) |
+                        (minImpliedRate << 120) |
+                        (maxImpliedRate << 88)
+                )
+            );
+    }
 
-    // function encodeAddLiquidity()
-    // function decodeAddLiquidity()
+    function encodeRemoveLiquidity(
+        uint8 marketIndex,
+        uint88 tokenAmount,
+        uint32 minImpliedRate,
+        uint32 maxImpliedRate
+    ) internal pure returns (bytes32) {
+        return
+            bytes32(
+                uint256(
+                    (uint8(TradeActionType.RemoveLiquidity) << 248) |
+                        (marketIndex << 240) |
+                        (tokenAmount << 152) |
+                        (minImpliedRate << 120) |
+                        (maxImpliedRate << 88)
+                )
+            );
+    }
 
-    // function encodeRemoveLiquidity()
-    // function decodeRemoveLiquidity()
+    function encodePurchaseNTokenResidual(
+        uint32 maturity,
+        int88 fCashResidualAmount
+    ) internal pure returns (bytes32) {
+        return
+            bytes32(
+                uint256(
+                    (uint8(TradeActionType.PurchaseNTokenResidual) << 248) |
+                        (maturity << 216) |
+                        (uint256(fCashResidualAmount) << 128)
+                )
+            );
+    }
 
-    // function encodePurchaseNTokenResidual()
-    // function decodePurchaseNTokenResidual()
+    function encodeSettleCashDebt(
+        address counterparty,
+        int88 fCashAmountToSettle
+    ) internal pure returns (bytes32) {
+        return
+            bytes32(
+                uint256(
+                    (uint8(TradeActionType.SettleCashDebt) << 248) |
+                        (uint256(counterparty) << 88) |
+                        (uint256(fCashAmountToSettle))
+                )
+            );
+    }
 
-    // function encodeSettleCashDebt()
-    // function decodeSettleCashDebt()
+    function encodeOffsettingTrade(
+        int256 notional,
+        uint256 maturity,
+        uint256 blockTime
+    ) internal pure returns (bytes32, bool) {
+        if (notional == 0) return (bytes32(0), false);
+        (uint256 marketIndex, bool isIdiosyncratic) = DateTime.getMarketIndex(
+            Constants.MAX_TRADED_MARKET_INDEX,
+            maturity,
+            blockTime
+        );
+        // Cannot trade out of an idiosyncratic asset
+        if (isIdiosyncratic) (bytes32(0), false);
 
-    // function getMarketIndex()
-    // function getMaturityFromMarketIndex()
+        require(type(int88).min < notional && notional < type(int88).max);
+        if (notional > 0) {
+            return (encodeBorrowTrade(uint8(marketIndex), uint88(notional.abs()), 0), true);
+        } else {
+            return (encodeLendTrade(uint8(marketIndex), uint88(notional.abs()), 0), true);
+        }
+    }
+
+    function encodeOffsettingTradesFromPortfolio(
+        PortfolioAsset[] memory portfolio,
+        uint256 fCashCurrency,
+        uint256 blockTime
+    ) private returns (bytes32[] memory) {
+        uint256 numTrades;
+
+        bytes32[] memory trades = new bytes32[](portfolio.length);
+        for (uint256 i; i < portfolio.length; i++) {
+            PortfolioAsset memory asset = portfolio[i];
+            if (asset.currencyId != fCashCurrency) {
+                continue;
+            } else if (asset.assetType == Constants.FCASH_ASSET_TYPE) {
+                (bytes32 trade, bool success) = encodeOffsettingTrade(
+                    asset.notional,
+                    asset.maturity,
+                    blockTime
+                );
+
+                if (success) {
+                    trades[numTrades] = trade;
+                    numTrades++;
+                }
+            } else {
+                // If the token's settlement date is in the past, it will be settled and cannot be
+                // removed from the portfolio
+                uint256 settlementDate = DateTime.getSettlementDate(asset);
+                if (settlementDate <= blockTime) continue;
+
+                (uint256 marketIndex, /* bool isIdiosyncratic */) = DateTime.getMarketIndex(
+                    Constants.MAX_TRADED_MARKET_INDEX,
+                    asset.maturity,
+                    blockTime
+                );
+                require(0 < asset.notional && asset.notional < type(uint88).max);
+
+                trades[numTrades] = encodeRemoveLiquidity(
+                    uint8(marketIndex),
+                    uint88(uint256(asset.notional)),
+                    0, 0
+                );
+                numTrades++;
+            }
+        }
+
+        // Resize the trades array down to numTrades length
+        assembly { mstore(trades, sub(mload(trades), numTrades)) }
+        return trades;
+    }
+
+    function encodeOffsettingTradesFromArrays(
+        uint256[] memory fCashMaturities,
+        int256[] memory fCashNotional,
+        uint256 blockTime
+    ) internal pure returns (bytes32[] memory) {
+        require(fCashMaturities.length == fCashNotional.length, "Trade Length Mismatch");
+
+        uint256 numTrades;
+        bytes32[] memory trades = new bytes32[](fCashMaturities.length);
+        for (uint256 i; i < fCashNotional.length; i++) {
+            (bytes32 trade, bool success) = encodeOffsettingTrade(
+                fCashNotional[i],
+                fCashMaturities[i],
+                blockTime
+            );
+
+            if (success) {
+                trades[numTrades] = trade;
+                numTrades++;
+            }
+        }
+
+        // Resize the trades array down to numTrades length
+        assembly { mstore(trades, sub(mload(trades), numTrades)) }
+        return trades;
+    }
 }

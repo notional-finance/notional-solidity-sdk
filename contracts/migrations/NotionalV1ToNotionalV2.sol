@@ -3,14 +3,11 @@ pragma solidity ^0.7.0;
 pragma abicoder v2;
 
 import "../lib/Types.sol";
+import "../lib/Addresses.sol";
 import "interfaces/notional/NotionalProxy.sol";
+import "interfaces/notional/NotionalCallback.sol";
+import "interfaces/WETH9.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
-interface WETH9 {
-    function withdraw(uint256 wad) external;
-
-    function transfer(address dst, uint256 wad) external returns (bool);
-}
 
 interface IEscrow {
     function getBalances(address account) external view returns (int256[] memory);
@@ -59,7 +56,7 @@ interface INotionalV1Erc1155 {
     ) external payable;
 }
 
-contract NotionalV1ToNotionalV2 {
+contract NotionalV1ToNotionalV2 is NotionalCallback {
     IEscrow public immutable Escrow;
     NotionalProxy public immutable NotionalV2;
     INotionalV1Erc1155 public immutable NotionalV1Erc1155;
@@ -78,18 +75,16 @@ contract NotionalV1ToNotionalV2 {
 
     constructor(
         IEscrow escrow_,
-        NotionalProxy notionalV2_,
         INotionalV1Erc1155 erc1155_,
-        WETH9 weth_,
         IERC20 wbtc_,
         uint16 v2Dai_,
         uint16 v2USDC_,
         uint16 v2WBTC_
     ) {
+        NotionalV2 = Addresses.getNotionalV2();
+        WETH = Addresses.getWETH();
         Escrow = escrow_;
-        NotionalV2 = notionalV2_;
         NotionalV1Erc1155 = erc1155_;
-        WETH = weth_;
         WBTC = wbtc_;
         V2_DAI = v2Dai_;
         V2_USDC = v2USDC_;
@@ -145,7 +140,7 @@ contract NotionalV1ToNotionalV2 {
         address sender,
         address account,
         bytes calldata callbackData
-    ) external returns (uint256) {
+    ) external override {
         require(msg.sender == address(NotionalV2) && sender == address(this), "Unauthorized callback");
         (
             uint16 v1DebtCurrencyId,

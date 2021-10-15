@@ -4,38 +4,15 @@ pragma abicoder v2;
 
 import "./NotionalV2BaseLiquidator.sol";
 import "../lib/SafeInt256.sol";
+import "../lib/SafeToken.sol";
+import "interfaces/aave/IFlashLoanReceiver.sol";
+import "interfaces/aave/IFlashLender.sol";
 import "interfaces/notional/NotionalProxy.sol";
 import "interfaces/compound/CTokenInterface.sol";
 import "interfaces/compound/CErc20Interface.sol";
 import "interfaces/compound/CEtherInterface.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-
-interface IFlashLoanReceiver {
-    function executeOperation(
-        address[] calldata assets,
-        uint256[] calldata amounts,
-        uint256[] calldata premiums,
-        address initiator,
-        bytes calldata params
-    ) external returns (bool);
-
-    //   function ADDRESSES_PROVIDER() external view returns (address);
-
-    //   function LENDING_POOL() external view returns (address);
-}
-
-interface IFlashLender {
-    function flashLoan(
-        address receiverAddress,
-        address[] calldata assets,
-        uint256[] calldata amounts,
-        uint256[] calldata modes,
-        address onBehalfOf,
-        bytes calldata params,
-        uint16 referralCode
-    ) external;
-}
 
 abstract contract NotionalV2FlashLiquidator is NotionalV2BaseLiquidator, IFlashLoanReceiver {
     using SafeInt256 for int256;
@@ -45,13 +22,10 @@ abstract contract NotionalV2FlashLiquidator is NotionalV2BaseLiquidator, IFlashL
     address public ADDRESS_PROVIDER;
 
     constructor (
-        NotionalProxy notionalV2_,
         address lendingPool_,
         address addressProvider_,
-        address weth_,
-        address cETH_,
         address owner_
-    ) NotionalV2BaseLiquidator(notionalV2_, weth_, cETH_, owner_) {
+    ) NotionalV2BaseLiquidator(owner_) {
         LENDING_POOL = lendingPool_;
         ADDRESS_PROVIDER = addressProvider_;
     }
@@ -67,14 +41,14 @@ abstract contract NotionalV2FlashLiquidator is NotionalV2BaseLiquidator, IFlashL
     function setCTokenAddress(address cToken) external onlyOwner {
         address underlying = CTokenInterface(cToken).underlying();
         // Notional V2 needs to be able to pull cTokens
-        checkAllowanceOrSet(cToken, address(NotionalV2));
+        SafeToken.checkAndSetMaxAllowance(cToken, address(NotionalV2));
         // Lending pool needs to be able to pull underlying
-        checkAllowanceOrSet(underlying, LENDING_POOL);
+        SafeToken.checkAndSetMaxAllowance(underlying, LENDING_POOL);
         underlyingToCToken[underlying] = cToken;
     }
 
     function approveToken(address token, address spender) external onlyOwner {
-        IERC20(token).approve(spender, type(uint256).max);
+        SafeToken.checkAndSetMaxAllowance(token, spender);
     }
 
     // Profit estimation
@@ -87,8 +61,7 @@ abstract contract NotionalV2FlashLiquidator is NotionalV2BaseLiquidator, IFlashL
         address onBehalfOf,
         bytes calldata params,
         uint16 referralCode
-    ) external returns (uint256) {
-        require(msg.sender == OWNER, "Contract owner required");
+    ) external onlyOwner returns (uint256) {
         IFlashLender(flashLender).flashLoan(
             receiverAddress,
             assets,
@@ -108,6 +81,7 @@ abstract contract NotionalV2FlashLiquidator is NotionalV2BaseLiquidator, IFlashL
         address initiator,
         bytes calldata params
     ) external override returns (bool) {
+        // NOTE: no check on initiator because all profits will be distributed back to the owner
         require(msg.sender == LENDING_POOL); // dev: unauthorized caller
         LiquidationAction action = LiquidationAction(abi.decode(params, (uint8)));
 
@@ -239,5 +213,13 @@ abstract contract NotionalV2FlashLiquidator is NotionalV2BaseLiquidator, IFlashL
         );
     }
 
+    function wrapToWETH() public {
+        _wrapToWETH();
+    }
+
+    function withdraw(address token, uint256 amount) public {
+        IERC20(token).transfer(OWNER, amount);
+    }
+    
     receive() external payable {}
 }
