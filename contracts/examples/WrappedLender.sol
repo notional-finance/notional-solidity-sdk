@@ -143,6 +143,10 @@ contract WrappedLender is AllowfCashReceiver {
             require(underlyingBalance >= fCashBalance, "Insufficient underlying");
             underlyingToken.transfer(msg.sender, fCashBalanceExternal);
         } else {
+            // NOTE: in this branch we don't actually check that the cToken (cash balance) redeems down to 
+            // an underlying value that is >= fCashBalance. Perhaps it is better just to remove the ability
+            // to withdraw to cTokens and force everything to be redeemed to underlying.
+
             // Convert from notional internal 8 decimal precision to asset token native decimal precision
             uint256 cashBalanceExternal = SafeInt256.toUint(EncodeDecode.convertToExternal(cashBalance, assetDecimals));
             uint256 assetCashBalance = assetToken.balanceOf(address(this));
