@@ -137,13 +137,14 @@ contract WrappedLender is AllowfCashReceiver {
         NotionalV2.withdraw(CURRENCY_ID, uint88(cashBalance), redeemToUnderlying);
 
         if (redeemToUnderlying) {
+            // Convert from notional internal 8 decimal precision to underlying native decimal precision
             uint256 fCashBalanceExternal = SafeInt256.toUint(EncodeDecode.convertToExternal(SafeInt256.toInt(fCashBalance), underlyingDecimals));
             uint256 underlyingBalance = underlyingToken.balanceOf(address(this));
             // NOTE: If this fails, can initiate a claim...
             require(underlyingBalance >= fCashBalance, "Insufficient underlying");
             underlyingToken.transfer(msg.sender, fCashBalanceExternal);
         } else {
-            // Underflow checked above
+            // Convert from notional internal 8 decimal precision to asset token native decimal precision
             uint256 cashBalanceExternal = SafeInt256.toUint(EncodeDecode.convertToExternal(cashBalance, assetDecimals));
             uint256 assetCashBalance = assetToken.balanceOf(address(this));
             // NOTE: If this fails, can initiate a claim...
