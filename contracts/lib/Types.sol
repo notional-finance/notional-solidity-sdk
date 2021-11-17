@@ -99,6 +99,7 @@ struct Token {
     bool hasTransferFee;
     int256 decimals;
     TokenType tokenType;
+    uint256 maxCollateralBalance;
 }
 
 struct PortfolioAsset {

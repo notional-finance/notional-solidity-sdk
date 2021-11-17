@@ -3,26 +3,40 @@ pragma solidity ^0.7.0;
 pragma abicoder v2;
 
 import "../lib/Addresses.sol";
-import "interfaces/compound/CTokenInterface.sol";
-import "interfaces/compound/CErc20Interface.sol";
+import "interfaces/compound/ICToken.sol";
+import "interfaces/compound/ICErc20.sol";
 import "interfaces/notional/NotionalProxy.sol";
 import "interfaces/notional/NotionalCallback.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract CompoundToNotionalV2 is NotionalCallback {
+    string public constant name = "Compound to Notional V2";
     NotionalProxy public immutable NotionalV2;
     address public immutable owner;
+    address public immutable cETH;
 
-    constructor(NotionalProxy notionalV2_, address owner_) {
+    constructor(NotionalProxy notionalV2_, address owner_, address cETH_) {
         NotionalV2 = Addresses.getNotionalV2();
         owner = owner_;
+        cETH = cETH_;
     }
 
     /// @notice This is called by the owner (set on deployment) to enable notionalV2 to be able
-    /// to transfer tokens from this contract.
-    function enableToken(address token) external {
+    /// to transfer cTokens from this contract.
+    function enableTokens(ICToken[] calldata cTokens) external {
         require(msg.sender == owner, "Unauthorized");
-        require(CTokenInterface(token).approve(address(NotionalV2), type(uint256).max));
+        for (uint256 i = 0; i < cTokens.length; i++) {
+            ICToken cToken = cTokens[i];
+            // Approve Notional to transfer cTokens from this adapter as collateral
+            require(cToken.approve(address(NotionalV2), type(uint256).max));
+
+            if (address(cToken) != cETH) {
+                // NOTE: not all underlying tokens respond properly to approvals
+                // Approve the cToken to mint cTokens from this address for borrow repayment
+                IERC20 underlying = IERC20(cToken.underlying());
+                underlying.approve(address(cToken), type(uint256).max);
+            }
+        }
     }
 
     function migrateBorrowFromCompound(
@@ -32,16 +46,18 @@ contract CompoundToNotionalV2 is NotionalCallback {
         uint256[] memory notionalV2CollateralAmounts,
         BalanceActionWithTrades[] calldata borrowAction
     ) external {
+        require(notionalV2CollateralIds.length == notionalV2CollateralAmounts.length);
         // borrow on notional via special flash loan facility
         //  - borrow repayment amount
         //  - withdraw to wallet, redeem to underlying
         // receive callback (tokens transferred to borrowing account)
         //   -> inside callback
+        //   -> transfer borrowed amount from account (needs to have set approvals)
         //   -> repayBorrowBehalf(account, repayAmount)
         //   -> deposit cToken to notional (account needs to have set approvals)
         //   -> exit callback
         // inside original borrow, check FC
-        uint256 borrowBalance = CTokenInterface(cTokenBorrow).borrowBalanceCurrent(msg.sender);
+        uint256 borrowBalance = ICToken(cTokenBorrow).borrowBalanceCurrent(msg.sender);
         if (cTokenRepayAmount == 0) {
             // Set the entire borrow balance if it is not set
             cTokenRepayAmount = borrowBalance;
@@ -74,18 +90,18 @@ contract CompoundToNotionalV2 is NotionalCallback {
         ) = abi.decode(callbackData, (address, uint256, uint16[], uint256[]));
 
         // Transfer in the underlying amount that was borrowed
-        address underlyingToken = CTokenInterface(cTokenBorrow).underlying();
+        address underlyingToken = ICToken(cTokenBorrow).underlying();
         bool success = IERC20(underlyingToken).transferFrom(account, address(this), cTokenRepayAmount);
         require(success, "Transfer of repayment failed");
 
         // Use the amount transferred to repay the borrow
-        uint code = CErc20Interface(cTokenBorrow).repayBorrowBehalf(account, cTokenRepayAmount);
+        uint code = ICErc20(cTokenBorrow).repayBorrowBehalf(account, cTokenRepayAmount);
         require(code == 0, "Repay borrow behalf failed");
 
         for (uint256 i; i < notionalV2CollateralIds.length; i++) {
             (Token memory assetToken, /* */) = NotionalV2.getCurrency(notionalV2CollateralIds[i]);
             // Transfer the collateral to this contract so we can deposit it
-            success = CTokenInterface(assetToken.tokenAddress).transferFrom(account, address(this), notionalV2CollateralAmounts[i]);
+            success = ICToken(assetToken.tokenAddress).transferFrom(account, address(this), notionalV2CollateralAmounts[i]);
             require(success, "cToken transfer failed");
 
             // Deposit the cToken into the account's portfolio, no free collateral check is triggered here

@@ -3,9 +3,9 @@ pragma solidity ^0.7.0;
 pragma abicoder v2;
 
 import "interfaces/notional/NotionalProxy.sol";
-import "interfaces/compound/CTokenInterface.sol";
-import "interfaces/compound/CErc20Interface.sol";
-import "interfaces/compound/CEtherInterface.sol";
+import "interfaces/compound/ICToken.sol";
+import "interfaces/compound/ICErc20.sol";
+import "interfaces/compound/ICEther.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/proxy/Initializable.sol";
 
@@ -158,7 +158,7 @@ contract NotionalV2ifCashLiquidator is Initializable {
         // Mint the traded local currency balance to cTokens
         if (localCurrencyId == 1) {
             uint256 underlyingToMint = address(this).balance;
-            CEtherInterface(cETH).mint{value: underlyingToMint}();
+            ICEther(cETH).mint{value: underlyingToMint}();
         } else {
             // prettier-ignore
             (
@@ -179,7 +179,7 @@ contract NotionalV2ifCashLiquidator is Initializable {
                         localUnderlyingToken.tokenAddress,
                         localAssetToken.tokenAddress
                     );
-                    CErc20Interface(localAssetToken.tokenAddress).mint(underlyingToMint);
+                    ICErc20(localAssetToken.tokenAddress).mint(underlyingToMint);
                 }
             }
 

@@ -2,8 +2,8 @@
 pragma solidity >0.7.0;
 
 import "./Constants.sol";
-import "interfaces/compound/CErc20Interface.sol";
-import "interfaces/compound/CEtherInterface.sol";
+import "interfaces/compound/ICErc20.sol";
+import "interfaces/compound/ICEther.sol";
 import "interfaces/WETH9.sol";
 import "interfaces/IEIP20NonStandard.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
@@ -18,7 +18,7 @@ library SafeToken {
 
     function mintCEth(address token, uint256 ethAmount) internal {
         // Reverts on error
-        CEtherInterface(token).mint{value: ethAmount}();
+        ICEther(token).mint{value: ethAmount}();
     }
 
     function mintCEthAndReturnBalance(address token, uint256 ethAmount)
@@ -32,7 +32,7 @@ library SafeToken {
     }
 
     function mintCToken(address token, uint256 underlyingAmount) internal {
-        uint256 returnCode = CErc20Interface(token).mint(underlyingAmount);
+        uint256 returnCode = ICErc20(token).mint(underlyingAmount);
 
         require(
             returnCode == Constants.COMPOUND_RETURN_CODE_NO_ERROR,
@@ -59,7 +59,7 @@ library SafeToken {
     function redeemCToken(address token, uint256 cTokenAmount)
         internal
     {
-        uint256 success = CErc20Interface(token).redeem(cTokenAmount);
+        uint256 success = ICErc20(token).redeem(cTokenAmount);
         require(
             success == Constants.COMPOUND_RETURN_CODE_NO_ERROR,
             "Error: Redeem cToken"

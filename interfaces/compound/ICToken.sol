@@ -1,16 +1,10 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.7.0;
 
-interface CTokenInterface {
+import "./ICErc20.sol";
 
-    /*** User Interface ***/
-
+interface ICToken is ICErc20 {
     function underlying() external view returns (address);
-    function transfer(address dst, uint amount) external returns (bool);
-    function transferFrom(address src, address dst, uint amount) external returns (bool);
-    function approve(address spender, uint amount) external returns (bool);
-    function allowance(address owner, address spender) external view returns (uint);
-    function balanceOf(address owner) external view returns (uint);
     function balanceOfUnderlying(address owner) external returns (uint);
     function getAccountSnapshot(address account) external view returns (uint, uint, uint, uint);
     function borrowRatePerBlock() external view returns (uint);

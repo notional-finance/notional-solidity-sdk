@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.7.0;
 
-import "./CTokenInterface.sol";
+import "./IErc20.sol";
 
-interface CErc20Interface {
-
-    /*** User Interface ***/
+interface ICErc20 is IErc20 {
 
     function mint(uint mintAmount) external returns (uint);
     function redeem(uint redeemTokens) external returns (uint);
@@ -13,5 +11,6 @@ interface CErc20Interface {
     function borrow(uint borrowAmount) external returns (uint);
     function repayBorrow(uint repayAmount) external returns (uint);
     function repayBorrowBehalf(address borrower, uint repayAmount) external returns (uint);
-    function liquidateBorrow(address borrower, uint repayAmount, CTokenInterface cTokenCollateral) external returns (uint);
+    function liquidateBorrow(address borrower, uint repayAmount, ICErc20 cTokenCollateral) external returns (uint);
+
 }
