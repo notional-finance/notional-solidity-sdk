@@ -1,0 +1,100 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "INotionalV1Erc1155",
+  "sourceName": "contracts/migrations/NotionalV1ToNotionalV2.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        },
+        {
+          "internalType": "uint32",
+          "name": "maxTime",
+          "type": "uint32"
+        },
+        {
+          "components": [
+            {
+              "internalType": "uint16",
+              "name": "currencyId",
+              "type": "uint16"
+            },
+            {
+              "internalType": "uint128",
+              "name": "amount",
+              "type": "uint128"
+            }
+          ],
+          "internalType": "struct INotionalV1Erc1155.Deposit[]",
+          "name": "deposits",
+          "type": "tuple[]"
+        },
+        {
+          "components": [
+            {
+              "internalType": "enum INotionalV1Erc1155.TradeType",
+              "name": "tradeType",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint8",
+              "name": "cashGroup",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint32",
+              "name": "maturity",
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint128",
+              "name": "amount",
+              "type": "uint128"
+            },
+            {
+              "internalType": "bytes",
+              "name": "slippageData",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct INotionalV1Erc1155.Trade[]",
+          "name": "trades",
+          "type": "tuple[]"
+        },
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "to",
+              "type": "address"
+            },
+            {
+              "internalType": "uint16",
+              "name": "currencyId",
+              "type": "uint16"
+            },
+            {
+              "internalType": "uint128",
+              "name": "amount",
+              "type": "uint128"
+            }
+          ],
+          "internalType": "struct INotionalV1Erc1155.Withdraw[]",
+          "name": "withdraws",
+          "type": "tuple[]"
+        }
+      ],
+      "name": "batchOperationWithdraw",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

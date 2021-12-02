@@ -57,7 +57,7 @@ def test_migrate_comp_to_v2(accounts, CompoundToNotionalV2, env):
     assert cUSDC.borrowBalanceStored(account) > 0
 
     # Assert that the FC check will fail on insufficient collateral
-    with brownie.reverts(""):
+    with brownie.reverts("Insufficient free collateral"):
         compToV2.migrateBorrowFromCompound(
             cUSDC.address, 0, [1], [100], [borrowAction], {"from": account}
         )

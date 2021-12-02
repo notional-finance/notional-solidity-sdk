@@ -1,0 +1,853 @@
+{
+  "id": "81e791690479f1d2b2a27cf7b1d58cdd",
+  "_format": "hh-sol-build-info-1",
+  "solcVersion": "0.7.6",
+  "solcLongVersion": "0.7.6+commit.7338295f",
+  "input": {
+    "language": "Solidity",
+    "sources": {
+      "contracts/abstract/AllowfCashReceiver.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.7.0;\n\n/**\n * @notice Allows fCash and liquidity tokens to be received by the\n * inheriting contract.\n */\nabstract contract AllowfCashReceiver {\n    // bytes4(keccak256(\"onERC1155Received(address,address,uint256,uint256,bytes)\"))\n    bytes4 internal constant ERC1155_ACCEPTED = 0xf23a6e61;\n    // bytes4(keccak256(\"onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)\"))\n    bytes4 internal constant ERC1155_BATCH_ACCEPTED = 0xbc197c81;\n\n    function onERC1155Received(\n        address _operator,\n        address _from,\n        uint256 _id,\n        uint256 _value,\n        bytes calldata _data\n    ) external pure returns (bytes4) {\n        return ERC1155_ACCEPTED;\n    }\n\n    function onERC1155BatchReceived(\n        address _operator,\n        address _from,\n        uint256[] calldata _ids,\n        uint256[] calldata _values,\n        bytes calldata _data\n    ) external pure returns (bytes4) {\n        return ERC1155_BATCH_ACCEPTED;\n    }\n}\n"
+      }
+    },
+    "settings": {
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "*": [
+            "abi",
+            "evm.bytecode",
+            "evm.deployedBytecode",
+            "evm.methodIdentifiers",
+            "metadata"
+          ],
+          "": [
+            "ast"
+          ]
+        }
+      }
+    }
+  },
+  "output": {
+    "contracts": {
+      "contracts/abstract/AllowfCashReceiver.sol": {
+        "AllowfCashReceiver": {
+          "abi": [
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "_operator",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "_from",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256[]",
+                  "name": "_ids",
+                  "type": "uint256[]"
+                },
+                {
+                  "internalType": "uint256[]",
+                  "name": "_values",
+                  "type": "uint256[]"
+                },
+                {
+                  "internalType": "bytes",
+                  "name": "_data",
+                  "type": "bytes"
+                }
+              ],
+              "name": "onERC1155BatchReceived",
+              "outputs": [
+                {
+                  "internalType": "bytes4",
+                  "name": "",
+                  "type": "bytes4"
+                }
+              ],
+              "stateMutability": "pure",
+              "type": "function"
+            },
+            {
+              "inputs": [
+                {
+                  "internalType": "address",
+                  "name": "_operator",
+                  "type": "address"
+                },
+                {
+                  "internalType": "address",
+                  "name": "_from",
+                  "type": "address"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "_id",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "_value",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "bytes",
+                  "name": "_data",
+                  "type": "bytes"
+                }
+              ],
+              "name": "onERC1155Received",
+              "outputs": [
+                {
+                  "internalType": "bytes4",
+                  "name": "",
+                  "type": "bytes4"
+                }
+              ],
+              "stateMutability": "pure",
+              "type": "function"
+            }
+          ],
+          "evm": {
+            "bytecode": {
+              "generatedSources": [],
+              "linkReferences": {},
+              "object": "",
+              "opcodes": "",
+              "sourceMap": ""
+            },
+            "deployedBytecode": {
+              "generatedSources": [],
+              "immutableReferences": {},
+              "linkReferences": {},
+              "object": "",
+              "opcodes": "",
+              "sourceMap": ""
+            },
+            "methodIdentifiers": {
+              "onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)": "bc197c81",
+              "onERC1155Received(address,address,uint256,uint256,bytes)": "f23a6e61"
+            }
+          },
+          "metadata": "{\"compiler\":{\"version\":\"0.7.6+commit.7338295f\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_operator\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_from\",\"type\":\"address\"},{\"internalType\":\"uint256[]\",\"name\":\"_ids\",\"type\":\"uint256[]\"},{\"internalType\":\"uint256[]\",\"name\":\"_values\",\"type\":\"uint256[]\"},{\"internalType\":\"bytes\",\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"onERC1155BatchReceived\",\"outputs\":[{\"internalType\":\"bytes4\",\"name\":\"\",\"type\":\"bytes4\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_operator\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_from\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_id\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"_value\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"_data\",\"type\":\"bytes\"}],\"name\":\"onERC1155Received\",\"outputs\":[{\"internalType\":\"bytes4\",\"name\":\"\",\"type\":\"bytes4\"}],\"stateMutability\":\"pure\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"notice\":\"Allows fCash and liquidity tokens to be received by the inheriting contract.\",\"version\":1}},\"settings\":{\"compilationTarget\":{\"contracts/abstract/AllowfCashReceiver.sol\":\"AllowfCashReceiver\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"contracts/abstract/AllowfCashReceiver.sol\":{\"keccak256\":\"0x3f32611606a2d94539c96e50e23593bcc493958fce0071afe5d2bc1525c81e89\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://b442778f24f4fb09caa42dc05f0bd3b5ff11792dba5eea6a9ba8801da8094429\",\"dweb:/ipfs/QmfD5mRncXTP6Jy3JQypAySmDBqJapaG9bQHm3FvLw5hAn\"]}},\"version\":1}"
+        }
+      }
+    },
+    "errors": [
+      {
+        "component": "general",
+        "errorCode": "5667",
+        "formattedMessage": "contracts/abstract/AllowfCashReceiver.sol:15:9: Warning: Unused function parameter. Remove or comment out the variable name to silence this warning.\n        address _operator,\n        ^---------------^\n",
+        "message": "Unused function parameter. Remove or comment out the variable name to silence this warning.",
+        "severity": "warning",
+        "sourceLocation": {
+          "end": 558,
+          "file": "contracts/abstract/AllowfCashReceiver.sol",
+          "start": 541
+        },
+        "type": "Warning"
+      },
+      {
+        "component": "general",
+        "errorCode": "5667",
+        "formattedMessage": "contracts/abstract/AllowfCashReceiver.sol:16:9: Warning: Unused function parameter. Remove or comment out the variable name to silence this warning.\n        address _from,\n        ^-----------^\n",
+        "message": "Unused function parameter. Remove or comment out the variable name to silence this warning.",
+        "severity": "warning",
+        "sourceLocation": {
+          "end": 581,
+          "file": "contracts/abstract/AllowfCashReceiver.sol",
+          "start": 568
+        },
+        "type": "Warning"
+      },
+      {
+        "component": "general",
+        "errorCode": "5667",
+        "formattedMessage": "contracts/abstract/AllowfCashReceiver.sol:17:9: Warning: Unused function parameter. Remove or comment out the variable name to silence this warning.\n        uint256 _id,\n        ^---------^\n",
+        "message": "Unused function parameter. Remove or comment out the variable name to silence this warning.",
+        "severity": "warning",
+        "sourceLocation": {
+          "end": 602,
+          "file": "contracts/abstract/AllowfCashReceiver.sol",
+          "start": 591
+        },
+        "type": "Warning"
+      },
+      {
+        "component": "general",
+        "errorCode": "5667",
+        "formattedMessage": "contracts/abstract/AllowfCashReceiver.sol:18:9: Warning: Unused function parameter. Remove or comment out the variable name to silence this warning.\n        uint256 _value,\n        ^------------^\n",
+        "message": "Unused function parameter. Remove or comment out the variable name to silence this warning.",
+        "severity": "warning",
+        "sourceLocation": {
+          "end": 626,
+          "file": "contracts/abstract/AllowfCashReceiver.sol",
+          "start": 612
+        },
+        "type": "Warning"
+      },
+      {
+        "component": "general",
+        "errorCode": "5667",
+        "formattedMessage": "contracts/abstract/AllowfCashReceiver.sol:19:9: Warning: Unused function parameter. Remove or comment out the variable name to silence this warning.\n        bytes calldata _data\n        ^------------------^\n",
+        "message": "Unused function parameter. Remove or comment out the variable name to silence this warning.",
+        "severity": "warning",
+        "sourceLocation": {
+          "end": 656,
+          "file": "contracts/abstract/AllowfCashReceiver.sol",
+          "start": 636
+        },
+        "type": "Warning"
+      },
+      {
+        "component": "general",
+        "errorCode": "5667",
+        "formattedMessage": "contracts/abstract/AllowfCashReceiver.sol:25:9: Warning: Unused function parameter. Remove or comment out the variable name to silence this warning.\n        address _operator,\n        ^---------------^\n",
+        "message": "Unused function parameter. Remove or comment out the variable name to silence this warning.",
+        "severity": "warning",
+        "sourceLocation": {
+          "end": 798,
+          "file": "contracts/abstract/AllowfCashReceiver.sol",
+          "start": 781
+        },
+        "type": "Warning"
+      },
+      {
+        "component": "general",
+        "errorCode": "5667",
+        "formattedMessage": "contracts/abstract/AllowfCashReceiver.sol:26:9: Warning: Unused function parameter. Remove or comment out the variable name to silence this warning.\n        address _from,\n        ^-----------^\n",
+        "message": "Unused function parameter. Remove or comment out the variable name to silence this warning.",
+        "severity": "warning",
+        "sourceLocation": {
+          "end": 821,
+          "file": "contracts/abstract/AllowfCashReceiver.sol",
+          "start": 808
+        },
+        "type": "Warning"
+      },
+      {
+        "component": "general",
+        "errorCode": "5667",
+        "formattedMessage": "contracts/abstract/AllowfCashReceiver.sol:27:9: Warning: Unused function parameter. Remove or comment out the variable name to silence this warning.\n        uint256[] calldata _ids,\n        ^---------------------^\n",
+        "message": "Unused function parameter. Remove or comment out the variable name to silence this warning.",
+        "severity": "warning",
+        "sourceLocation": {
+          "end": 854,
+          "file": "contracts/abstract/AllowfCashReceiver.sol",
+          "start": 831
+        },
+        "type": "Warning"
+      },
+      {
+        "component": "general",
+        "errorCode": "5667",
+        "formattedMessage": "contracts/abstract/AllowfCashReceiver.sol:28:9: Warning: Unused function parameter. Remove or comment out the variable name to silence this warning.\n        uint256[] calldata _values,\n        ^------------------------^\n",
+        "message": "Unused function parameter. Remove or comment out the variable name to silence this warning.",
+        "severity": "warning",
+        "sourceLocation": {
+          "end": 890,
+          "file": "contracts/abstract/AllowfCashReceiver.sol",
+          "start": 864
+        },
+        "type": "Warning"
+      },
+      {
+        "component": "general",
+        "errorCode": "5667",
+        "formattedMessage": "contracts/abstract/AllowfCashReceiver.sol:29:9: Warning: Unused function parameter. Remove or comment out the variable name to silence this warning.\n        bytes calldata _data\n        ^------------------^\n",
+        "message": "Unused function parameter. Remove or comment out the variable name to silence this warning.",
+        "severity": "warning",
+        "sourceLocation": {
+          "end": 920,
+          "file": "contracts/abstract/AllowfCashReceiver.sol",
+          "start": 900
+        },
+        "type": "Warning"
+      }
+    ],
+    "sources": {
+      "contracts/abstract/AllowfCashReceiver.sol": {
+        "ast": {
+          "absolutePath": "contracts/abstract/AllowfCashReceiver.sol",
+          "exportedSymbols": {
+            "AllowfCashReceiver": [
+              47
+            ]
+          },
+          "id": 48,
+          "license": "MIT",
+          "nodeType": "SourceUnit",
+          "nodes": [
+            {
+              "id": 1,
+              "literals": [
+                "solidity",
+                "^",
+                "0.7",
+                ".0"
+              ],
+              "nodeType": "PragmaDirective",
+              "src": "32:23:0"
+            },
+            {
+              "abstract": true,
+              "baseContracts": [],
+              "contractDependencies": [],
+              "contractKind": "contract",
+              "documentation": {
+                "id": 2,
+                "nodeType": "StructuredDocumentation",
+                "src": "57:98:0",
+                "text": " @notice Allows fCash and liquidity tokens to be received by the\n inheriting contract."
+              },
+              "fullyImplemented": true,
+              "id": 47,
+              "linearizedBaseContracts": [
+                47
+              ],
+              "name": "AllowfCashReceiver",
+              "nodeType": "ContractDefinition",
+              "nodes": [
+                {
+                  "constant": true,
+                  "id": 5,
+                  "mutability": "constant",
+                  "name": "ERC1155_ACCEPTED",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 47,
+                  "src": "284:54:0",
+                  "stateVariable": true,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes4",
+                    "typeString": "bytes4"
+                  },
+                  "typeName": {
+                    "id": 3,
+                    "name": "bytes4",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "284:6:0",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes4",
+                      "typeString": "bytes4"
+                    }
+                  },
+                  "value": {
+                    "hexValue": "30786632336136653631",
+                    "id": 4,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": true,
+                    "kind": "number",
+                    "lValueRequested": false,
+                    "nodeType": "Literal",
+                    "src": "328:10:0",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_rational_4063915617_by_1",
+                      "typeString": "int_const 4063915617"
+                    },
+                    "value": "0xf23a6e61"
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": true,
+                  "id": 8,
+                  "mutability": "constant",
+                  "name": "ERC1155_BATCH_ACCEPTED",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 47,
+                  "src": "438:60:0",
+                  "stateVariable": true,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes4",
+                    "typeString": "bytes4"
+                  },
+                  "typeName": {
+                    "id": 6,
+                    "name": "bytes4",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "438:6:0",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes4",
+                      "typeString": "bytes4"
+                    }
+                  },
+                  "value": {
+                    "hexValue": "30786263313937633831",
+                    "id": 7,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": true,
+                    "kind": "number",
+                    "lValueRequested": false,
+                    "nodeType": "Literal",
+                    "src": "488:10:0",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_rational_3155786881_by_1",
+                      "typeString": "int_const 3155786881"
+                    },
+                    "value": "0xbc197c81"
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "body": {
+                    "id": 25,
+                    "nodeType": "Block",
+                    "src": "694:40:0",
+                    "statements": [
+                      {
+                        "expression": {
+                          "id": 23,
+                          "name": "ERC1155_ACCEPTED",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 5,
+                          "src": "711:16:0",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_bytes4",
+                            "typeString": "bytes4"
+                          }
+                        },
+                        "functionReturnParameters": 22,
+                        "id": 24,
+                        "nodeType": "Return",
+                        "src": "704:23:0"
+                      }
+                    ]
+                  },
+                  "functionSelector": "f23a6e61",
+                  "id": 26,
+                  "implemented": true,
+                  "kind": "function",
+                  "modifiers": [],
+                  "name": "onERC1155Received",
+                  "nodeType": "FunctionDefinition",
+                  "parameters": {
+                    "id": 19,
+                    "nodeType": "ParameterList",
+                    "parameters": [
+                      {
+                        "constant": false,
+                        "id": 10,
+                        "mutability": "mutable",
+                        "name": "_operator",
+                        "nodeType": "VariableDeclaration",
+                        "scope": 26,
+                        "src": "541:17:0",
+                        "stateVariable": false,
+                        "storageLocation": "default",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_address",
+                          "typeString": "address"
+                        },
+                        "typeName": {
+                          "id": 9,
+                          "name": "address",
+                          "nodeType": "ElementaryTypeName",
+                          "src": "541:7:0",
+                          "stateMutability": "nonpayable",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_address",
+                            "typeString": "address"
+                          }
+                        },
+                        "visibility": "internal"
+                      },
+                      {
+                        "constant": false,
+                        "id": 12,
+                        "mutability": "mutable",
+                        "name": "_from",
+                        "nodeType": "VariableDeclaration",
+                        "scope": 26,
+                        "src": "568:13:0",
+                        "stateVariable": false,
+                        "storageLocation": "default",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_address",
+                          "typeString": "address"
+                        },
+                        "typeName": {
+                          "id": 11,
+                          "name": "address",
+                          "nodeType": "ElementaryTypeName",
+                          "src": "568:7:0",
+                          "stateMutability": "nonpayable",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_address",
+                            "typeString": "address"
+                          }
+                        },
+                        "visibility": "internal"
+                      },
+                      {
+                        "constant": false,
+                        "id": 14,
+                        "mutability": "mutable",
+                        "name": "_id",
+                        "nodeType": "VariableDeclaration",
+                        "scope": 26,
+                        "src": "591:11:0",
+                        "stateVariable": false,
+                        "storageLocation": "default",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_uint256",
+                          "typeString": "uint256"
+                        },
+                        "typeName": {
+                          "id": 13,
+                          "name": "uint256",
+                          "nodeType": "ElementaryTypeName",
+                          "src": "591:7:0",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_uint256",
+                            "typeString": "uint256"
+                          }
+                        },
+                        "visibility": "internal"
+                      },
+                      {
+                        "constant": false,
+                        "id": 16,
+                        "mutability": "mutable",
+                        "name": "_value",
+                        "nodeType": "VariableDeclaration",
+                        "scope": 26,
+                        "src": "612:14:0",
+                        "stateVariable": false,
+                        "storageLocation": "default",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_uint256",
+                          "typeString": "uint256"
+                        },
+                        "typeName": {
+                          "id": 15,
+                          "name": "uint256",
+                          "nodeType": "ElementaryTypeName",
+                          "src": "612:7:0",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_uint256",
+                            "typeString": "uint256"
+                          }
+                        },
+                        "visibility": "internal"
+                      },
+                      {
+                        "constant": false,
+                        "id": 18,
+                        "mutability": "mutable",
+                        "name": "_data",
+                        "nodeType": "VariableDeclaration",
+                        "scope": 26,
+                        "src": "636:20:0",
+                        "stateVariable": false,
+                        "storageLocation": "calldata",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_bytes_calldata_ptr",
+                          "typeString": "bytes"
+                        },
+                        "typeName": {
+                          "id": 17,
+                          "name": "bytes",
+                          "nodeType": "ElementaryTypeName",
+                          "src": "636:5:0",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_bytes_storage_ptr",
+                            "typeString": "bytes"
+                          }
+                        },
+                        "visibility": "internal"
+                      }
+                    ],
+                    "src": "531:131:0"
+                  },
+                  "returnParameters": {
+                    "id": 22,
+                    "nodeType": "ParameterList",
+                    "parameters": [
+                      {
+                        "constant": false,
+                        "id": 21,
+                        "mutability": "mutable",
+                        "name": "",
+                        "nodeType": "VariableDeclaration",
+                        "scope": 26,
+                        "src": "686:6:0",
+                        "stateVariable": false,
+                        "storageLocation": "default",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_bytes4",
+                          "typeString": "bytes4"
+                        },
+                        "typeName": {
+                          "id": 20,
+                          "name": "bytes4",
+                          "nodeType": "ElementaryTypeName",
+                          "src": "686:6:0",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_bytes4",
+                            "typeString": "bytes4"
+                          }
+                        },
+                        "visibility": "internal"
+                      }
+                    ],
+                    "src": "685:8:0"
+                  },
+                  "scope": 47,
+                  "src": "505:229:0",
+                  "stateMutability": "pure",
+                  "virtual": false,
+                  "visibility": "external"
+                },
+                {
+                  "body": {
+                    "id": 45,
+                    "nodeType": "Block",
+                    "src": "958:46:0",
+                    "statements": [
+                      {
+                        "expression": {
+                          "id": 43,
+                          "name": "ERC1155_BATCH_ACCEPTED",
+                          "nodeType": "Identifier",
+                          "overloadedDeclarations": [],
+                          "referencedDeclaration": 8,
+                          "src": "975:22:0",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_bytes4",
+                            "typeString": "bytes4"
+                          }
+                        },
+                        "functionReturnParameters": 42,
+                        "id": 44,
+                        "nodeType": "Return",
+                        "src": "968:29:0"
+                      }
+                    ]
+                  },
+                  "functionSelector": "bc197c81",
+                  "id": 46,
+                  "implemented": true,
+                  "kind": "function",
+                  "modifiers": [],
+                  "name": "onERC1155BatchReceived",
+                  "nodeType": "FunctionDefinition",
+                  "parameters": {
+                    "id": 39,
+                    "nodeType": "ParameterList",
+                    "parameters": [
+                      {
+                        "constant": false,
+                        "id": 28,
+                        "mutability": "mutable",
+                        "name": "_operator",
+                        "nodeType": "VariableDeclaration",
+                        "scope": 46,
+                        "src": "781:17:0",
+                        "stateVariable": false,
+                        "storageLocation": "default",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_address",
+                          "typeString": "address"
+                        },
+                        "typeName": {
+                          "id": 27,
+                          "name": "address",
+                          "nodeType": "ElementaryTypeName",
+                          "src": "781:7:0",
+                          "stateMutability": "nonpayable",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_address",
+                            "typeString": "address"
+                          }
+                        },
+                        "visibility": "internal"
+                      },
+                      {
+                        "constant": false,
+                        "id": 30,
+                        "mutability": "mutable",
+                        "name": "_from",
+                        "nodeType": "VariableDeclaration",
+                        "scope": 46,
+                        "src": "808:13:0",
+                        "stateVariable": false,
+                        "storageLocation": "default",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_address",
+                          "typeString": "address"
+                        },
+                        "typeName": {
+                          "id": 29,
+                          "name": "address",
+                          "nodeType": "ElementaryTypeName",
+                          "src": "808:7:0",
+                          "stateMutability": "nonpayable",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_address",
+                            "typeString": "address"
+                          }
+                        },
+                        "visibility": "internal"
+                      },
+                      {
+                        "constant": false,
+                        "id": 33,
+                        "mutability": "mutable",
+                        "name": "_ids",
+                        "nodeType": "VariableDeclaration",
+                        "scope": 46,
+                        "src": "831:23:0",
+                        "stateVariable": false,
+                        "storageLocation": "calldata",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_array$_t_uint256_$dyn_calldata_ptr",
+                          "typeString": "uint256[]"
+                        },
+                        "typeName": {
+                          "baseType": {
+                            "id": 31,
+                            "name": "uint256",
+                            "nodeType": "ElementaryTypeName",
+                            "src": "831:7:0",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_uint256",
+                              "typeString": "uint256"
+                            }
+                          },
+                          "id": 32,
+                          "nodeType": "ArrayTypeName",
+                          "src": "831:9:0",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_array$_t_uint256_$dyn_storage_ptr",
+                            "typeString": "uint256[]"
+                          }
+                        },
+                        "visibility": "internal"
+                      },
+                      {
+                        "constant": false,
+                        "id": 36,
+                        "mutability": "mutable",
+                        "name": "_values",
+                        "nodeType": "VariableDeclaration",
+                        "scope": 46,
+                        "src": "864:26:0",
+                        "stateVariable": false,
+                        "storageLocation": "calldata",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_array$_t_uint256_$dyn_calldata_ptr",
+                          "typeString": "uint256[]"
+                        },
+                        "typeName": {
+                          "baseType": {
+                            "id": 34,
+                            "name": "uint256",
+                            "nodeType": "ElementaryTypeName",
+                            "src": "864:7:0",
+                            "typeDescriptions": {
+                              "typeIdentifier": "t_uint256",
+                              "typeString": "uint256"
+                            }
+                          },
+                          "id": 35,
+                          "nodeType": "ArrayTypeName",
+                          "src": "864:9:0",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_array$_t_uint256_$dyn_storage_ptr",
+                            "typeString": "uint256[]"
+                          }
+                        },
+                        "visibility": "internal"
+                      },
+                      {
+                        "constant": false,
+                        "id": 38,
+                        "mutability": "mutable",
+                        "name": "_data",
+                        "nodeType": "VariableDeclaration",
+                        "scope": 46,
+                        "src": "900:20:0",
+                        "stateVariable": false,
+                        "storageLocation": "calldata",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_bytes_calldata_ptr",
+                          "typeString": "bytes"
+                        },
+                        "typeName": {
+                          "id": 37,
+                          "name": "bytes",
+                          "nodeType": "ElementaryTypeName",
+                          "src": "900:5:0",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_bytes_storage_ptr",
+                            "typeString": "bytes"
+                          }
+                        },
+                        "visibility": "internal"
+                      }
+                    ],
+                    "src": "771:155:0"
+                  },
+                  "returnParameters": {
+                    "id": 42,
+                    "nodeType": "ParameterList",
+                    "parameters": [
+                      {
+                        "constant": false,
+                        "id": 41,
+                        "mutability": "mutable",
+                        "name": "",
+                        "nodeType": "VariableDeclaration",
+                        "scope": 46,
+                        "src": "950:6:0",
+                        "stateVariable": false,
+                        "storageLocation": "default",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_bytes4",
+                          "typeString": "bytes4"
+                        },
+                        "typeName": {
+                          "id": 40,
+                          "name": "bytes4",
+                          "nodeType": "ElementaryTypeName",
+                          "src": "950:6:0",
+                          "typeDescriptions": {
+                            "typeIdentifier": "t_bytes4",
+                            "typeString": "bytes4"
+                          }
+                        },
+                        "visibility": "internal"
+                      }
+                    ],
+                    "src": "949:8:0"
+                  },
+                  "scope": 47,
+                  "src": "740:264:0",
+                  "stateMutability": "pure",
+                  "virtual": false,
+                  "visibility": "external"
+                }
+              ],
+              "scope": 48,
+              "src": "156:850:0"
+            }
+          ],
+          "src": "32:975:0"
+        },
+        "id": 0
+      }
+    }
+  }
+}

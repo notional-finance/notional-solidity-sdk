@@ -1,0 +1,1738 @@
+{
+  "_format": "hh-sol-cache-2",
+  "files": {
+    "/Users/mgn/notional/notional-solidity-sdk/contracts/abstract/AllowfCashReceiver.sol": {
+      "lastModificationDate": 1636474212441,
+      "contentHash": "85aa53a28a34e55025854796a274de7f",
+      "sourceName": "contracts/abstract/AllowfCashReceiver.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.7.0"
+      ],
+      "artifacts": [
+        "AllowfCashReceiver"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/contracts/abstract/NotionalV2BaseLiquidator.sol": {
+      "lastModificationDate": 1637184180884,
+      "contentHash": "892ffd9dccf644b064832685fad9b861",
+      "sourceName": "contracts/abstract/NotionalV2BaseLiquidator.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "interfaces/compound/IErc20.sol",
+        "interfaces/notional/NotionalProxy.sol",
+        "interfaces/compound/ICErc20.sol",
+        "interfaces/compound/ICEther.sol",
+        "interfaces/WETH9.sol",
+        "../lib/Addresses.sol",
+        "../lib/DateTime.sol",
+        "../lib/SafeInt256.sol",
+        "../lib/SafeToken.sol",
+        "../lib/EncodeDecode.sol"
+      ],
+      "versionPragmas": [
+        ">0.7.0"
+      ],
+      "artifacts": [
+        "NotionalV2BaseLiquidator"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/interfaces/compound/IErc20.sol": {
+      "lastModificationDate": 1637184180888,
+      "contentHash": "ee30ed264bf9f41fafc96b7ff4d42249",
+      "sourceName": "interfaces/compound/IErc20.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.7.0"
+      ],
+      "artifacts": [
+        "IErc20"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/interfaces/notional/NotionalProxy.sol": {
+      "lastModificationDate": 1637184180889,
+      "contentHash": "293182dd72c0a42a22d3ae66d3d139ec",
+      "sourceName": "interfaces/notional/NotionalProxy.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../../contracts/lib/Types.sol",
+        "./nTokenERC20.sol",
+        "./nERC1155Interface.sol",
+        "./NotionalGovernance.sol",
+        "./NotionalViews.sol"
+      ],
+      "versionPragmas": [
+        "^0.7.0"
+      ],
+      "artifacts": [
+        "NotionalProxy"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/interfaces/compound/ICErc20.sol": {
+      "lastModificationDate": 1637184180888,
+      "contentHash": "d6b3c08f6ef498e139996114c4590977",
+      "sourceName": "interfaces/compound/ICErc20.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./IErc20.sol"
+      ],
+      "versionPragmas": [
+        "^0.7.0"
+      ],
+      "artifacts": [
+        "ICErc20"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/interfaces/compound/ICEther.sol": {
+      "lastModificationDate": 1637184180888,
+      "contentHash": "02a69993f3e8f15681e43aecdcdeb0bc",
+      "sourceName": "interfaces/compound/ICEther.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./ICErc20.sol"
+      ],
+      "versionPragmas": [
+        "^0.7.0"
+      ],
+      "artifacts": [
+        "ICEther"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/interfaces/WETH9.sol": {
+      "lastModificationDate": 1636474212445,
+      "contentHash": "112169152ba5658a7ef6674c56745f4e",
+      "sourceName": "interfaces/WETH9.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">0.7.0"
+      ],
+      "artifacts": [
+        "WETH9"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/contracts/lib/Addresses.sol": {
+      "lastModificationDate": 1637184180885,
+      "contentHash": "399f22248c31c390751fdae25c057368",
+      "sourceName": "contracts/lib/Addresses.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "interfaces/notional/NotionalProxy.sol",
+        "interfaces/compound/ICEther.sol",
+        "interfaces/WETH9.sol",
+        "@openzeppelin/contracts/token/ERC20/ERC20.sol"
+      ],
+      "versionPragmas": [
+        "^0.7.0"
+      ],
+      "artifacts": [
+        "Addresses",
+        "KovanAddresses",
+        "LocalAddresses",
+        "MainnetAddresses"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/contracts/lib/DateTime.sol": {
+      "lastModificationDate": 1636474212443,
+      "contentHash": "ab55517908c98fc88e0b10c4378d493a",
+      "sourceName": "contracts/lib/DateTime.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./Constants.sol",
+        "./Types.sol",
+        "@openzeppelin/contracts/math/SafeMath.sol"
+      ],
+      "versionPragmas": [
+        "^0.7.0"
+      ],
+      "artifacts": [
+        "DateTime"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/contracts/lib/SafeInt256.sol": {
+      "lastModificationDate": 1636474212443,
+      "contentHash": "7b1b7325d5571d1d4c18d9f42701300e",
+      "sourceName": "contracts/lib/SafeInt256.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./Constants.sol"
+      ],
+      "versionPragmas": [
+        "^0.7.0"
+      ],
+      "artifacts": [
+        "SafeInt256"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/contracts/lib/SafeToken.sol": {
+      "lastModificationDate": 1637184180886,
+      "contentHash": "f45655e3f1aa13189b05ba5f3d1e5a43",
+      "sourceName": "contracts/lib/SafeToken.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./Constants.sol",
+        "interfaces/compound/ICErc20.sol",
+        "interfaces/compound/ICEther.sol",
+        "interfaces/WETH9.sol",
+        "interfaces/IEIP20NonStandard.sol",
+        "@openzeppelin/contracts/math/SafeMath.sol",
+        "@openzeppelin/contracts/token/ERC20/IERC20.sol"
+      ],
+      "versionPragmas": [
+        ">0.7.0"
+      ],
+      "artifacts": [
+        "SafeToken"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/contracts/lib/EncodeDecode.sol": {
+      "lastModificationDate": 1636474212443,
+      "contentHash": "bc2aaad955b3becbd087e347b3a52bff",
+      "sourceName": "contracts/lib/EncodeDecode.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./Constants.sol",
+        "./Types.sol",
+        "./SafeInt256.sol",
+        "./DateTime.sol"
+      ],
+      "versionPragmas": [
+        ">0.7.0"
+      ],
+      "artifacts": [
+        "EncodeDecode"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/contracts/lib/Types.sol": {
+      "lastModificationDate": 1637184180886,
+      "contentHash": "1938d1adc7085157fbd92431056c9fc1",
+      "sourceName": "contracts/lib/Types.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "interfaces/chainlink/AggregatorV2V3Interface.sol",
+        "interfaces/notional/AssetRateAdapter.sol"
+      ],
+      "versionPragmas": [
+        "^0.7.0"
+      ],
+      "artifacts": []
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/interfaces/notional/nTokenERC20.sol": {
+      "lastModificationDate": 1636749338091,
+      "contentHash": "adcbd382a106175f47911117bafafdc7",
+      "sourceName": "interfaces/notional/nTokenERC20.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.7.0"
+      ],
+      "artifacts": [
+        "nTokenERC20"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/interfaces/notional/nERC1155Interface.sol": {
+      "lastModificationDate": 1636749500067,
+      "contentHash": "3371ec8a1da2d3034728cdf719b8f2f9",
+      "sourceName": "interfaces/notional/nERC1155Interface.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../../contracts/lib/Types.sol"
+      ],
+      "versionPragmas": [
+        "^0.7.0"
+      ],
+      "artifacts": [
+        "nERC1155Interface"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/interfaces/notional/NotionalGovernance.sol": {
+      "lastModificationDate": 1637184180889,
+      "contentHash": "cb7cedc64bd80f8b5c0d8a655b55f22a",
+      "sourceName": "interfaces/notional/NotionalGovernance.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../../contracts/lib/Types.sol",
+        "interfaces/chainlink/AggregatorV2V3Interface.sol",
+        "interfaces/notional/NotionalGovernance.sol"
+      ],
+      "versionPragmas": [
+        "^0.7.0"
+      ],
+      "artifacts": [
+        "NotionalGovernance"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/interfaces/notional/NotionalViews.sol": {
+      "lastModificationDate": 1636749485465,
+      "contentHash": "2735edfa4f538c83f667f80ae03752b0",
+      "sourceName": "interfaces/notional/NotionalViews.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../../contracts/lib/Types.sol"
+      ],
+      "versionPragmas": [
+        "^0.7.0"
+      ],
+      "artifacts": [
+        "NotionalViews"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/interfaces/chainlink/AggregatorV2V3Interface.sol": {
+      "lastModificationDate": 1636474212446,
+      "contentHash": "154877a29a226eebdee6b752dd582329",
+      "sourceName": "interfaces/chainlink/AggregatorV2V3Interface.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./AggregatorInterface.sol",
+        "./AggregatorV3Interface.sol"
+      ],
+      "versionPragmas": [
+        ">=0.6.0"
+      ],
+      "artifacts": [
+        "AggregatorV2V3Interface"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/interfaces/notional/AssetRateAdapter.sol": {
+      "lastModificationDate": 1636749338087,
+      "contentHash": "cdc2e04eeba25585199e744083809f8c",
+      "sourceName": "interfaces/notional/AssetRateAdapter.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.7.0"
+      ],
+      "artifacts": [
+        "AssetRateAdapter"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/interfaces/chainlink/AggregatorInterface.sol": {
+      "lastModificationDate": 1636474212445,
+      "contentHash": "abb60cfddbe0b7b4c7f9147e9689d26b",
+      "sourceName": "interfaces/chainlink/AggregatorInterface.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.6.0"
+      ],
+      "artifacts": [
+        "AggregatorInterface"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/interfaces/chainlink/AggregatorV3Interface.sol": {
+      "lastModificationDate": 1636474212446,
+      "contentHash": "0178a950e73a30ae17a08ee230a85d5c",
+      "sourceName": "interfaces/chainlink/AggregatorV3Interface.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.6.0"
+      ],
+      "artifacts": [
+        "AggregatorV3Interface"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/node_modules/@openzeppelin/contracts/token/ERC20/ERC20.sol": {
+      "lastModificationDate": 1638461868564,
+      "contentHash": "8065b340476f61365c076897199425f1",
+      "sourceName": "@openzeppelin/contracts/token/ERC20/ERC20.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../../utils/Context.sol",
+        "./IERC20.sol",
+        "../../math/SafeMath.sol"
+      ],
+      "versionPragmas": [
+        ">=0.6.0 <0.8.0"
+      ],
+      "artifacts": [
+        "ERC20"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/node_modules/@openzeppelin/contracts/utils/Context.sol": {
+      "lastModificationDate": 1638461867655,
+      "contentHash": "2adbd82f6d055a4751566d4671512b03",
+      "sourceName": "@openzeppelin/contracts/utils/Context.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.6.0 <0.8.0"
+      ],
+      "artifacts": [
+        "Context"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol": {
+      "lastModificationDate": 1638461868565,
+      "contentHash": "e0a41531d159d3a32f84b7a3ecf9fabb",
+      "sourceName": "@openzeppelin/contracts/token/ERC20/IERC20.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.6.0 <0.8.0"
+      ],
+      "artifacts": [
+        "IERC20"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/node_modules/@openzeppelin/contracts/math/SafeMath.sol": {
+      "lastModificationDate": 1638461867652,
+      "contentHash": "e03e12206057e809eb76c5f681170c32",
+      "sourceName": "@openzeppelin/contracts/math/SafeMath.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.6.0 <0.8.0"
+      ],
+      "artifacts": [
+        "SafeMath"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/contracts/lib/Constants.sol": {
+      "lastModificationDate": 1636474212442,
+      "contentHash": "21aa3187c99ee57d9e569d1d508ed869",
+      "sourceName": "contracts/lib/Constants.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.7.0"
+      ],
+      "artifacts": [
+        "Constants"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/interfaces/IEIP20NonStandard.sol": {
+      "lastModificationDate": 1636474212445,
+      "contentHash": "e786efe6cb5af97bbf89a355a133515c",
+      "sourceName": "interfaces/IEIP20NonStandard.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.7.0"
+      ],
+      "artifacts": [
+        "IEIP20NonStandard"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/contracts/abstract/NotionalV2FlashLiquidator.sol": {
+      "lastModificationDate": 1637184180885,
+      "contentHash": "62bee525dbc0a97f859f49d4dcb5d5c2",
+      "sourceName": "contracts/abstract/NotionalV2FlashLiquidator.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./NotionalV2BaseLiquidator.sol",
+        "../lib/SafeInt256.sol",
+        "../lib/SafeToken.sol",
+        "interfaces/aave/IFlashLoanReceiver.sol",
+        "interfaces/aave/IFlashLender.sol",
+        "interfaces/notional/NotionalProxy.sol",
+        "interfaces/compound/ICToken.sol",
+        "interfaces/compound/ICErc20.sol",
+        "interfaces/compound/ICEther.sol",
+        "@openzeppelin/contracts/token/ERC20/IERC20.sol",
+        "@openzeppelin/contracts/math/SafeMath.sol"
+      ],
+      "versionPragmas": [
+        "^0.7.0"
+      ],
+      "artifacts": [
+        "NotionalV2FlashLiquidator"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/interfaces/aave/IFlashLoanReceiver.sol": {
+      "lastModificationDate": 1636474212445,
+      "contentHash": "fd27241c88284569ee73684859681f2c",
+      "sourceName": "interfaces/aave/IFlashLoanReceiver.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.7.0"
+      ],
+      "artifacts": [
+        "IFlashLoanReceiver"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/interfaces/aave/IFlashLender.sol": {
+      "lastModificationDate": 1636474212445,
+      "contentHash": "5fef88d252036adc3de94d4b3165a9c2",
+      "sourceName": "interfaces/aave/IFlashLender.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.7.0"
+      ],
+      "artifacts": [
+        "IFlashLender"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/interfaces/compound/ICToken.sol": {
+      "lastModificationDate": 1637184180888,
+      "contentHash": "dc4ef5b2e43c1dd104a60442b946419c",
+      "sourceName": "interfaces/compound/ICToken.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./ICErc20.sol"
+      ],
+      "versionPragmas": [
+        "^0.7.0"
+      ],
+      "artifacts": [
+        "ICToken"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/contracts/liquidations/NotionalV2UniV3FlashLiquidator.sol": {
+      "lastModificationDate": 1636474212444,
+      "contentHash": "381f4798e2fe36068c91e24fa640260d",
+      "sourceName": "contracts/liquidations/NotionalV2UniV3FlashLiquidator.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../abstract/NotionalV2FlashLiquidator.sol",
+        "interfaces/uniswap/v3/ISwapRouter.sol",
+        "@openzeppelin/contracts/token/ERC20/IERC20.sol"
+      ],
+      "versionPragmas": [
+        ">0.7.0"
+      ],
+      "artifacts": [
+        "NotionalV2UniV3FlashLiquidator"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/interfaces/uniswap/v3/ISwapRouter.sol": {
+      "lastModificationDate": 1636474212448,
+      "contentHash": "50c8087ce29b2988369ecc2b69b6c183",
+      "sourceName": "interfaces/uniswap/v3/ISwapRouter.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./IUniswapV3SwapCallback.sol"
+      ],
+      "versionPragmas": [
+        "^0.7.0"
+      ],
+      "artifacts": [
+        "ISwapRouter"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/interfaces/uniswap/v3/IUniswapV3SwapCallback.sol": {
+      "lastModificationDate": 1636474212448,
+      "contentHash": "9471482a33e2a24dbcd6ea6712dd55f8",
+      "sourceName": "interfaces/uniswap/v3/IUniswapV3SwapCallback.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.7.0"
+      ],
+      "artifacts": [
+        "IUniswapV3SwapCallback"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/contracts/migrations/NotionalV1ToNotionalV2.sol": {
+      "lastModificationDate": 1636474212444,
+      "contentHash": "8d5f8c51001ceb0bad779b4901e7e61b",
+      "sourceName": "contracts/migrations/NotionalV1ToNotionalV2.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../lib/Types.sol",
+        "../lib/Addresses.sol",
+        "interfaces/notional/NotionalProxy.sol",
+        "interfaces/notional/NotionalCallback.sol",
+        "interfaces/WETH9.sol",
+        "@openzeppelin/contracts/token/ERC20/IERC20.sol"
+      ],
+      "versionPragmas": [
+        "^0.7.0"
+      ],
+      "artifacts": [
+        "IEscrow",
+        "INotionalV1Erc1155",
+        "NotionalV1ToNotionalV2"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/interfaces/notional/NotionalCallback.sol": {
+      "lastModificationDate": 1636749338088,
+      "contentHash": "cf0160b815c574719039ab3f5a2119bc",
+      "sourceName": "interfaces/notional/NotionalCallback.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.7.0"
+      ],
+      "artifacts": [
+        "NotionalCallback"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/contracts/migrations/CompoundToNotionalV2.sol": {
+      "lastModificationDate": 1637249640955,
+      "contentHash": "db83ff73f73367bb5f028e43adae2c18",
+      "sourceName": "contracts/migrations/CompoundToNotionalV2.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../lib/Addresses.sol",
+        "interfaces/compound/ICToken.sol",
+        "interfaces/compound/ICErc20.sol",
+        "interfaces/notional/NotionalProxy.sol",
+        "interfaces/notional/NotionalCallback.sol",
+        "@openzeppelin/contracts/token/ERC20/IERC20.sol"
+      ],
+      "versionPragmas": [
+        "^0.7.0"
+      ],
+      "artifacts": [
+        "CompoundToNotionalV2"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/contracts/liquidations/NotionalV2ifCashLiquidator.sol": {
+      "lastModificationDate": 1637184180887,
+      "contentHash": "e621019e06a8029436743a34dd3f8816",
+      "sourceName": "contracts/liquidations/NotionalV2ifCashLiquidator.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "interfaces/notional/NotionalProxy.sol",
+        "interfaces/compound/ICToken.sol",
+        "interfaces/compound/ICErc20.sol",
+        "interfaces/compound/ICEther.sol",
+        "@openzeppelin/contracts/token/ERC20/IERC20.sol",
+        "@openzeppelin/contracts/proxy/Initializable.sol"
+      ],
+      "versionPragmas": [
+        "^0.7.0"
+      ],
+      "artifacts": [
+        "NotionalV2ifCashLiquidator"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/node_modules/@openzeppelin/contracts/proxy/Initializable.sol": {
+      "lastModificationDate": 1638461867654,
+      "contentHash": "1efacd801320f8f9413700ddbcf00647",
+      "sourceName": "@openzeppelin/contracts/proxy/Initializable.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../utils/Address.sol"
+      ],
+      "versionPragmas": [
+        ">=0.4.24 <0.8.0"
+      ],
+      "artifacts": [
+        "Initializable"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/node_modules/@openzeppelin/contracts/utils/Address.sol": {
+      "lastModificationDate": 1638461867655,
+      "contentHash": "7aa46886ff5abe7515496208a5e2ce5a",
+      "sourceName": "@openzeppelin/contracts/utils/Address.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.6.2 <0.8.0"
+      ],
+      "artifacts": [
+        "Address"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/node_modules/@openzeppelin/contracts/proxy/UpgradeableProxy.sol": {
+      "lastModificationDate": 1638461867655,
+      "contentHash": "c163cbd51d0173b71c8137b0ddf1e0ba",
+      "sourceName": "@openzeppelin/contracts/proxy/UpgradeableProxy.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./Proxy.sol",
+        "../utils/Address.sol"
+      ],
+      "versionPragmas": [
+        ">=0.6.0 <0.8.0"
+      ],
+      "artifacts": [
+        "UpgradeableProxy"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/node_modules/@openzeppelin/contracts/proxy/Proxy.sol": {
+      "lastModificationDate": 1638461867654,
+      "contentHash": "52841a5095656ecbf7bc86cd6c114699",
+      "sourceName": "@openzeppelin/contracts/proxy/Proxy.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.6.0 <0.8.0"
+      ],
+      "artifacts": [
+        "Proxy"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/node_modules/@openzeppelin/contracts/proxy/TransparentUpgradeableProxy.sol": {
+      "lastModificationDate": 1638461867655,
+      "contentHash": "572da86d0eb185b41f85df7d2d75378b",
+      "sourceName": "@openzeppelin/contracts/proxy/TransparentUpgradeableProxy.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./UpgradeableProxy.sol"
+      ],
+      "versionPragmas": [
+        ">=0.6.0 <0.8.0"
+      ],
+      "artifacts": [
+        "TransparentUpgradeableProxy"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/node_modules/@openzeppelin/contracts/proxy/ProxyAdmin.sol": {
+      "lastModificationDate": 1638461867654,
+      "contentHash": "61e1e11a965a3a8df0f2252ea2828584",
+      "sourceName": "@openzeppelin/contracts/proxy/ProxyAdmin.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../access/Ownable.sol",
+        "./TransparentUpgradeableProxy.sol"
+      ],
+      "versionPragmas": [
+        ">=0.6.0 <0.8.0"
+      ],
+      "artifacts": [
+        "ProxyAdmin"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/node_modules/@openzeppelin/contracts/access/Ownable.sol": {
+      "lastModificationDate": 1638461867650,
+      "contentHash": "6748815a5b45c4aeeda56819f41190e0",
+      "sourceName": "@openzeppelin/contracts/access/Ownable.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../utils/Context.sol"
+      ],
+      "versionPragmas": [
+        ">=0.6.0 <0.8.0"
+      ],
+      "artifacts": [
+        "Ownable"
+      ]
+    },
+    "/Users/mgn/notional/notional-solidity-sdk/contracts/mocks/OpenZeppelinImports.sol": {
+      "lastModificationDate": 1637184180887,
+      "contentHash": "0d0305f1d1ee876a9337b802be4cd520",
+      "sourceName": "contracts/mocks/OpenZeppelinImports.sol",
+      "solcConfig": {
+        "version": "0.7.6",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "@openzeppelin/contracts/proxy/ProxyAdmin.sol",
+        "@openzeppelin/contracts/proxy/TransparentUpgradeableProxy.sol"
+      ],
+      "versionPragmas": [
+        "^0.7.0"
+      ],
+      "artifacts": [
+        "nProxyAdmin",
+        "nTransparentUpgradeableProxy"
+      ]
+    }
+  }
+}
