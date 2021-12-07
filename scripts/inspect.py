@@ -44,11 +44,3 @@ def main():
 
     except ContractNotFound:
         print(f"Contract not found at address: {addresses['notional']}")
-
-    # create env dictionary
-    # Get currencies
-    # for each currency
-        # load ABI for currency
-        # create Contract
-        # store contract in env
-

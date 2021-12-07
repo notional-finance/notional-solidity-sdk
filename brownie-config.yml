@@ -20,3 +20,5 @@ networks:
 dependencies:
   - compound-finance/compound-protocol@2.8.1
   - OpenZeppelin/openzeppelin-contracts@3.4.2-solc-0.7
+
+dotenv: .env

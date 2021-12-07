@@ -16,7 +16,7 @@ contract CompoundToNotionalV2 is NotionalCallback {
     address public immutable cETH;
 
     constructor(NotionalProxy notionalV2_, address owner_, address cETH_) {
-        NotionalV2 = Addresses.getNotionalV2();
+        NotionalV2 = notionalV2_;
         owner = owner_;
         cETH = cETH_;
     }
