@@ -8,9 +8,9 @@ import "../lib/SafeToken.sol";
 import "interfaces/aave/IFlashLoanReceiver.sol";
 import "interfaces/aave/IFlashLender.sol";
 import "interfaces/notional/NotionalProxy.sol";
-import "interfaces/compound/CTokenInterface.sol";
-import "interfaces/compound/CErc20Interface.sol";
-import "interfaces/compound/CEtherInterface.sol";
+import "interfaces/compound/ICToken.sol";
+import "interfaces/compound/ICErc20.sol";
+import "interfaces/compound/ICEther.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
@@ -39,7 +39,7 @@ abstract contract NotionalV2FlashLiquidator is NotionalV2BaseLiquidator, IFlashL
     }
 
     function setCTokenAddress(address cToken) external onlyOwner {
-        address underlying = CTokenInterface(cToken).underlying();
+        address underlying = ICToken(cToken).underlying();
         // Notional V2 needs to be able to pull cTokens
         SafeToken.checkAndSetMaxAllowance(cToken, address(NotionalV2));
         // Lending pool needs to be able to pull underlying
@@ -220,6 +220,6 @@ abstract contract NotionalV2FlashLiquidator is NotionalV2BaseLiquidator, IFlashL
     function withdraw(address token, uint256 amount) public {
         IERC20(token).transfer(OWNER, amount);
     }
-    
+
     receive() external payable {}
 }

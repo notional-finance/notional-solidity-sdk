@@ -4,3 +4,10 @@ __pycache__
 build/
 reports/
 venv/
+env/
+node_modules/
+cache/
+chaindb/
+.pytest_cache/
+.env
+artifacts/

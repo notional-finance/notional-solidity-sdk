@@ -2,10 +2,10 @@
 pragma solidity >0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "interfaces/compound/IErc20.sol";
 import "interfaces/notional/NotionalProxy.sol";
-import "interfaces/compound/CErc20Interface.sol";
-import "interfaces/compound/CEtherInterface.sol";
+import "interfaces/compound/ICErc20.sol";
+import "interfaces/compound/ICEther.sol";
 import "interfaces/WETH9.sol";
 import "../lib/Addresses.sol";
 import "../lib/DateTime.sol";
@@ -72,7 +72,7 @@ abstract contract NotionalV2BaseLiquidator {
         address token,
         uint16 currencyId
     ) internal {
-        uint256 amount = IERC20(token).balanceOf(address(this));
+        uint256 amount = IErc20(token).balanceOf(address(this));
         SafeToken.checkAndSetMaxAllowance(token, address(NotionalV2));
         NotionalV2.depositUnderlyingToken(address(this), currencyId, amount);
     }
@@ -235,7 +235,7 @@ abstract contract NotionalV2BaseLiquidator {
             /* address fCashUnderlyingAddress */,
             uint256[] memory fCashMaturities,
             uint256[] memory maxfCashLiquidateAmounts
-        ) = abi.decode(params, 
+        ) = abi.decode(params,
             (uint8, address, uint16, address, uint16, address, address, uint256[], uint256[])
         );
 
