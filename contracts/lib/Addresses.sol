@@ -7,9 +7,8 @@ import "interfaces/WETH9.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 library MainnetAddresses {
-    // PENDING DEPLOYMENT
-    NotionalProxy internal constant NotionalV2 = NotionalProxy(address(0));
-    ERC20 internal constant NoteERC20 = ERC20(address(0));
+    NotionalProxy internal constant NotionalV2 = NotionalProxy(0x1344A36A1B56144C3Bc62E7757377D288fDE0369);
+    ERC20 internal constant NoteERC20 = ERC20(0xCFEAead4947f0705A14ec42aC3D44129E1Ef3eD5);
     WETH9 internal constant WETH = WETH9(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
     ICEther internal constant cETH = ICEther(0x4Ddc2D193948926D02f9B1fE9e1daa0718270ED5);
 }
