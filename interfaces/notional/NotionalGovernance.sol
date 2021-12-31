@@ -4,7 +4,6 @@ pragma abicoder v2;
 
 import "../../contracts/lib/Types.sol";
 import "interfaces/chainlink/AggregatorV2V3Interface.sol";
-import "interfaces/notional/AssetRateAdapter.sol";
 import "interfaces/notional/NotionalGovernance.sol";
 
 interface NotionalGovernance {

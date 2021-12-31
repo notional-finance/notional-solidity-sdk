@@ -4,7 +4,7 @@
     "comptroller": "0xfD2228687374b500664f9706a24FcF2402EF6BA0",
     "deployer": "0x628029b5b7574296365EEF243f240aF83ffA7111",
     "governor": "0x7999f62D05CfFD451561a69C88F064A8AC46f1f8",
-    "networkName": "unknown",
+    "networkName": "development",
     "note": "0x7EaEceb29Fb4eB4277E2761cE3607DF3e73f2d3e",
     "notional": "0xfa5f002555eb670019bD938604802f901208aE71",
     "startBlock": 1
