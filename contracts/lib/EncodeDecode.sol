@@ -30,9 +30,9 @@ library EncodeDecode {
         internal
         pure
         returns (
-            uint256 currencyId,
-            uint256 maturity,
-            uint256 assetType
+            uint16 currencyId,
+            uint40 maturity,
+            uint8 assetType
         )
     {
         assetType = uint8(id);
