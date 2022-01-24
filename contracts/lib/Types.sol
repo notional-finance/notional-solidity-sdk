@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.7.0;
+pragma solidity ^0.8.0;
 
 import "interfaces/chainlink/AggregatorV2V3Interface.sol";
 import "interfaces/notional/AssetRateAdapter.sol";

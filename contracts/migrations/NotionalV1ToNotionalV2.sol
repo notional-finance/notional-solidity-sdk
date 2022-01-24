@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity ^0.7.0;
+pragma solidity ^0.8.0;
 pragma abicoder v2;
 
 import "../lib/Types.sol";
@@ -154,7 +154,7 @@ contract NotionalV1ToNotionalV2 is NotionalCallback {
         // collateral to be USDC or DAI during migration.
         int256 collateralBalance =
             (v1CollateralId == V1_ETH ? balances[V1_ETH] : balances[V1_WBTC]);
-        require(0 < collateralBalance && collateralBalance <= type(uint128).max);
+        require(0 < collateralBalance && collateralBalance <= int256(uint256(type(uint128).max)));
 
         {
             INotionalV1Erc1155.Deposit[] memory deposits = new INotionalV1Erc1155.Deposit[](1);
@@ -169,7 +169,7 @@ contract NotionalV1ToNotionalV2 is NotionalCallback {
             withdraws[0] = INotionalV1Erc1155.Withdraw(
                 address(this), // Will withdraw collateral to this contract, to be deposited below
                 v1CollateralId,
-                uint128(collateralBalance)
+                uint128(int128(collateralBalance))
             );
 
             NotionalV1Erc1155.batchOperationWithdraw(

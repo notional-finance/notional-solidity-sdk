@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity ^0.7.0;
+pragma solidity ^0.8.0;
 pragma abicoder v2;
 
 import "./NotionalV2BaseLiquidator.sol";
@@ -12,7 +12,7 @@ import "interfaces/compound/ICToken.sol";
 import "interfaces/compound/ICErc20.sol";
 import "interfaces/compound/ICEther.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 abstract contract NotionalV2FlashLiquidator is NotionalV2BaseLiquidator, IFlashLoanReceiver {
     using SafeInt256 for int256;

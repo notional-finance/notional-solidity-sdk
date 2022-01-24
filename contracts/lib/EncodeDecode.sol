@@ -135,7 +135,7 @@ library EncodeDecode {
                 uint256(
                     (uint8(TradeActionType.PurchaseNTokenResidual) << 248) |
                         (maturity << 216) |
-                        (uint256(fCashResidualAmount) << 128)
+                        (uint256(int256(fCashResidualAmount)) << 128)
                 )
             );
     }
@@ -148,8 +148,8 @@ library EncodeDecode {
             bytes32(
                 uint256(
                     (uint8(TradeActionType.SettleCashDebt) << 248) |
-                        (uint256(counterparty) << 88) |
-                        (uint256(fCashAmountToSettle))
+                        (uint256(bytes32(bytes20(counterparty))) << 88) |
+                        (uint256(int256(fCashAmountToSettle)))
                 )
             );
     }
@@ -170,9 +170,9 @@ library EncodeDecode {
 
         require(type(int88).min < notional && notional < type(int88).max);
         if (notional > 0) {
-            return (encodeBorrowTrade(uint8(marketIndex), uint88(notional.abs()), 0), true);
+            return (encodeBorrowTrade(uint8(marketIndex), uint88(int88(notional.abs())), 0), true);
         } else {
-            return (encodeLendTrade(uint8(marketIndex), uint88(notional.abs()), 0), true);
+            return (encodeLendTrade(uint8(marketIndex), uint88(int88(notional.abs())), 0), true);
         }
     }
 
@@ -210,7 +210,7 @@ library EncodeDecode {
                     asset.maturity,
                     blockTime
                 );
-                require(0 < asset.notional && asset.notional < type(uint88).max);
+                require(0 < asset.notional && asset.notional < int256(uint256(type(uint88).max)));
 
                 trades[numTrades] = encodeRemoveLiquidity(
                     uint8(marketIndex),

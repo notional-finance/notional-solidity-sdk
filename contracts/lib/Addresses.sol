@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.7.0;
+pragma solidity ^0.8.0;
 
 import "interfaces/notional/NotionalProxy.sol";
 import "interfaces/compound/ICEther.sol";
