@@ -3,11 +3,13 @@ pragma solidity 0.8.11;
 pragma experimental ABIEncoderV2;
 
 import "../lib/EncodeDecode.sol";
+import "../lib/DateTime.sol";
 import "../abstract/AllowfCashReceiver.sol";
 import "interfaces/notional/NotionalProxy.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin-upgradeable/contracts/token/ERC777/ERC777Upgradeable.sol";
 
 contract WrappedfCash is ERC777Upgradeable, AllowfCashReceiver {
@@ -32,17 +34,21 @@ contract WrappedfCash is ERC777Upgradeable, AllowfCashReceiver {
         uint16 currencyId,
         uint40 maturity
     ) external initializer {
-        // TODO: check that the currency and maturity are valid
+        (CashGroupSettings memory cashGroup) = NotionalV2.getCashGroup(currencyId);
+        require(cashGroup.maxMarketIndex > 0, "Invalid currency");
+        // This includes idiosyncratic fCash maturities
+        require(DateTime.isValidMaturity(cashGroup.maxMarketIndex, maturity, block.timestamp), "Invalid maturity");
 
         _fCashId = EncodeDecode.encodeERC1155Id(currencyId, maturity, Constants.FCASH_ASSET_TYPE);
         (IERC20 underlyingToken, /* */) = _getUnderlyingToken(currencyId);
         string memory _symbol = IERC20Metadata(address(underlyingToken)).symbol();
+        string memory _maturity = Strings.toString(maturity);
 
         __ERC777_init(
             // name
-            string(abi.encodePacked("Wrapped ", _symbol, " @ ", maturity)),
+            string(abi.encodePacked("Wrapped f", _symbol, " @ ", _maturity)),
             // symbol
-            string(abi.encodePacked("wf", _symbol, "@", maturity)),
+            string(abi.encodePacked("wf", _symbol, ":", _maturity)),
             // no default operators
             new address[](0)
         );
