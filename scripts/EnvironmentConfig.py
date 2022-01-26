@@ -67,7 +67,8 @@ class Environment:
         }
 
         self.whales = {
-            "DAI": accounts.at("0x6dfaf865a93d3b0b5cfd1b4db192d1505676645b", force=True),
+            "DAI_CONTRACT": accounts.at("0xbebc44782c7db0a1a60cb6fe97d0b483032ff1c7", force=True),
+            "DAI_EOA": accounts.at("0x1e3D6eAb4BCF24bcD04721caA11C478a2e59852D", force=True),
             "USDC": accounts.at("0x0a59649758aa4d66e25f08dd01271e891fe52199", force=True),
             "cDAI": accounts.at("0x33b890d6574172e93e58528cd99123a88c0756e9", force=True),
             "ETH": accounts.at("0x7D24796f7dDB17d73e8B1d0A3bbD103FBA2cb2FE", force=True),

@@ -100,7 +100,9 @@ contract WrappedfCash is ERC777Upgradeable, AllowfCashReceiver {
         if (_operator == _from) userData = _data;
         else operatorData = _data;
 
-        _mint(_from, _value, userData, operatorData);
+        // We don't require a recipient ack here to maintain compatibility
+        // with contracts that don't support ERC777
+        _mint(_from, _value, userData, operatorData, false);
 
         // This will allow the fCash to be accepted
         return ERC1155_ACCEPTED;
@@ -142,6 +144,8 @@ contract WrappedfCash is ERC777Upgradeable, AllowfCashReceiver {
         bytes memory userData,
         bytes memory operatorData
     ) internal override {
+        // Save the total supply value before burning to calculate the cash claim share
+        uint256 initialTotalSupply = totalSupply();
         // This will validate that the account has sufficient tokens to burn and make
         // any relevant underlying stateful changes to balances.
         super._burn(from, amount, userData, operatorData);
@@ -158,7 +162,7 @@ contract WrappedfCash is ERC777Upgradeable, AllowfCashReceiver {
             require(0 < cashBalance, "Negative Cash Balance");
 
             // This always rounds down in favor of the wrapped fCash contract.
-            uint256 assetInternalCashClaim = (amount * uint256(Constants.INTERNAL_TOKEN_PRECISION)) / uint256(cashBalance);
+            uint256 assetInternalCashClaim = (uint256(cashBalance) * amount) / initialTotalSupply;
             require(assetInternalCashClaim <= uint256(type(uint88).max));
 
             // By default will redeem to asset tokens
@@ -170,7 +174,10 @@ contract WrappedfCash is ERC777Upgradeable, AllowfCashReceiver {
             // Transfer withdrawn tokens to the `from` address
             _withdrawCashToAccount(currencyId, from, uint88(assetInternalCashClaim), redeemToUnderlying);
         } else {
-            // If the fCash has not matured, then we can transfer it via ERC1155
+            // If the fCash has not matured, then we can transfer it via ERC1155.
+            // NOTE: this will fail if the destination is a contract because the ERC1155 contract
+            // does a callback to the `onERC1155Received` hook. If that is the case it is possible
+            // to use a regular ERC20 transfer on this contract instead.
             NotionalV2.safeTransferFrom(
                 address(this), // Sending from this contract
                 from,          // Destination is the address burning the fCash

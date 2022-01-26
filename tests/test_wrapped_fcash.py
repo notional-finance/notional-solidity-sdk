@@ -1,5 +1,6 @@
 import pytest
 import brownie
+import eth_abi
 from tests.helpers import get_balance_trade_action
 from brownie import Contract, WrappedfCash
 from brownie.network import chain
@@ -11,30 +12,30 @@ def run_around_tests():
     yield
     chain.revert()
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def env():
     return getEnvironment()
 
-@pytest.fixture(autouse=True) 
+@pytest.fixture() 
 def beacon(WrappedfCash, nUpgradeableBeacon, env):
     impl = WrappedfCash.deploy(env.notional.address, {"from": env.deployer})
     return nUpgradeableBeacon.deploy(impl.address, {"from": env.deployer})
 
-@pytest.fixture(autouse=True) 
+@pytest.fixture() 
 def factory(WrappedfCashFactory, beacon, env):
     return WrappedfCashFactory.deploy(beacon.address, {"from": env.deployer})
 
-@pytest.fixture(autouse=True) 
+@pytest.fixture() 
 def wrapper(factory, env):
     markets = env.notional.getActiveMarkets(2)
     txn = factory.deployWrapper(2, markets[0][1])
     return Contract.from_abi("Wrapper", txn.events['WrapperDeployed']['wrapper'], WrappedfCash.abi)
 
-@pytest.fixture(autouse=True) 
-def lender(wrapper, env):
-    env.tokens["DAI"].approve(env.notional.address, 2**255-1, {'from': env.whales["DAI"]})
+@pytest.fixture() 
+def lender(env):
+    env.tokens["DAI"].approve(env.notional.address, 2**255-1, {'from': env.whales["DAI_EOA"]})
     env.notional.batchBalanceAndTradeAction(
-        env.whales["DAI"],
+        env.whales["DAI_EOA"],
         [ 
             get_balance_trade_action(
                 2,
@@ -49,17 +50,16 @@ def lender(wrapper, env):
                 withdrawEntireCashBalance=True,
                 redeemToUnderlying=True,
             )
-        ], { "from": env.whales["DAI"] }
+        ], { "from": env.whales["DAI_EOA"] }
     )
 
-    return env.whales["DAI"]
+    return env.whales["DAI_EOA"]
 
 # Deploy and Upgrade
-
 def test_deploy_wrapped_fcash(factory, env):
     markets = env.notional.getActiveMarkets(2)
     computedAddress = factory.computeAddress(2, markets[0][1])
-    txn = factory.deployWrapper(2, markets[0][1])
+    txn = factory.deployWrapper(2, markets[0][1], {"from": env.deployer})
     assert txn.events['WrapperDeployed']['wrapper'] == computedAddress
 
     wrapper = Contract.from_abi("Wrapper", computedAddress, WrappedfCash.abi)
@@ -144,14 +144,61 @@ def test_transfer_fcash(wrapper, lender, env):
 
 # Test Redeem fCash
 
-def test_fail_redeem_above_balance(beacon, env):
-    pass
+def test_fail_redeem_above_balance(wrapper, lender, env):
+    env.notional.safeTransferFrom(
+        lender.address,
+        wrapper.address,
+        wrapper.getfCashId(),
+        100_000e8,
+        "",
+        {"from": lender}
+    )
 
-def test_redeem_fcash_pre_maturity(beacon, env):
-    pass
+    with brownie.reverts():
+        wrapper.redeem(105_000e8, "", {"from": lender})
 
-def test_redeem_post_maturity_asset(beacon, env):
-    pass
+def test_redeem_fcash_pre_maturity(wrapper, lender, env):
+    env.notional.safeTransferFrom(
+        lender.address,
+        wrapper.address,
+        wrapper.getfCashId(),
+        100_000e8,
+        "",
+        {"from": lender}
+    )
+    wrapper.redeem(50_000e8, b'', {"from": lender})
 
-def test_redeem_post_maturity_underlying(beacon, env):
-    pass
+    assert wrapper.balanceOf(lender.address) == 50_000e8
+    assert env.notional.balanceOf(lender.address, wrapper.getfCashId()) == 50_000e8
+
+def test_redeem_post_maturity_asset(wrapper, lender, env):
+    env.notional.safeTransferFrom(
+        lender.address,
+        wrapper.address,
+        wrapper.getfCashId(),
+        100_000e8,
+        "",
+        {"from": lender}
+    )
+
+    chain.mine(1, timestamp=wrapper.getMaturity())
+    wrapper.redeem(50_000e8, b'', {"from": lender})
+
+    assert wrapper.balanceOf(lender.address) == 50_000e8
+    assert env.tokens["cDAI"].balanceOf(lender.address) == 229452921165321
+
+def test_redeem_post_maturity_underlying(wrapper, lender, env):
+    env.notional.safeTransferFrom(
+        lender.address,
+        wrapper.address,
+        wrapper.getfCashId(),
+        100_000e8,
+        "",
+        {"from": lender}
+    )
+
+    chain.mine(1, timestamp=wrapper.getMaturity())
+    wrapper.redeem(50_000e8, eth_abi.encode_single("bool", True), {"from": lender})
+
+    assert wrapper.balanceOf(lender.address) == 50_000e8
+    assert env.tokens["DAI"].balanceOf(lender.address) >= 50_000e18
