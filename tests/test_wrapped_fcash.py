@@ -55,6 +55,30 @@ def lender(env):
 
     return env.whales["DAI_EOA"]
 
+@pytest.fixture() 
+def lender_contract(env):
+    env.tokens["DAI"].approve(env.notional.address, 2**255-1, {'from': env.whales["DAI_CONTRACT"]})
+    env.notional.batchBalanceAndTradeAction(
+        env.whales["DAI_CONTRACT"],
+        [ 
+            get_balance_trade_action(
+                2,
+                "DepositUnderlying",
+                [{
+                    "tradeActionType": "Lend",
+                    "marketIndex": 1,
+                    "notional": 100_000e8,
+                    "minSlippage": 0
+                }],
+                depositActionAmount=100_000e18,
+                withdrawEntireCashBalance=True,
+                redeemToUnderlying=True,
+            )
+        ], { "from": env.whales["DAI_CONTRACT"] }
+    )
+
+    return env.whales["DAI_CONTRACT"]
+
 # Deploy and Upgrade
 def test_deploy_wrapped_fcash(factory, env):
     markets = env.notional.getActiveMarkets(2)
@@ -142,6 +166,18 @@ def test_transfer_fcash(wrapper, lender, env):
 
     assert wrapper.balanceOf(lender) == 100_000e8
 
+def test_transfer_fcash_contract(wrapper, lender_contract, env):
+    env.notional.safeTransferFrom(
+        lender_contract.address,
+        wrapper.address,
+        wrapper.getfCashId(),
+        100_000e8,
+        "",
+        {"from": lender_contract}
+    )
+
+    assert wrapper.balanceOf(lender_contract) == 100_000e8
+
 # Test Redeem fCash
 
 def test_fail_redeem_above_balance(wrapper, lender, env):
@@ -170,6 +206,24 @@ def test_redeem_fcash_pre_maturity(wrapper, lender, env):
 
     assert wrapper.balanceOf(lender.address) == 50_000e8
     assert env.notional.balanceOf(lender.address, wrapper.getfCashId()) == 50_000e8
+
+def test_redeem_fcash_pre_maturity_contract(wrapper, lender_contract, env):
+    env.notional.safeTransferFrom(
+        lender_contract.address,
+        wrapper.address,
+        wrapper.getfCashId(),
+        100_000e8,
+        "",
+        {"from": lender_contract}
+    )
+
+    with brownie.reverts():
+        wrapper.redeem(50_000e8, b'', {"from": lender_contract})
+
+    wrapper.transfer(env.deployer, 50_000e8, {"from": lender_contract})
+
+    assert wrapper.balanceOf(lender_contract.address) == 50_000e8
+    assert wrapper.balanceOf(env.deployer) == 50_000e8
 
 def test_redeem_post_maturity_asset(wrapper, lender, env):
     env.notional.safeTransferFrom(
