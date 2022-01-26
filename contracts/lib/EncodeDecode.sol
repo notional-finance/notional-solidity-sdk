@@ -65,12 +65,10 @@ library EncodeDecode {
     ) internal pure returns (bytes32) {
         return
             bytes32(
-                uint256(
-                    (uint8(TradeActionType.Lend) << 248) |
-                        (marketIndex << 240) |
-                        (fCashAmount << 152) |
-                        (minImpliedRate << 120)
-                )
+                (uint256(uint8(TradeActionType.Lend)) << 248) |
+                (uint256(marketIndex) << 240) |
+                (uint256(fCashAmount) << 152) |
+                (uint256(minImpliedRate) << 120)
             );
     }
 
@@ -82,10 +80,10 @@ library EncodeDecode {
         return
             bytes32(
                 uint256(
-                    (uint8(TradeActionType.Borrow) << 248) |
-                        (marketIndex << 240) |
-                        (fCashAmount << 152) |
-                        (maxImpliedRate << 120)
+                    (uint256(uint8(TradeActionType.Borrow)) << 248) |
+                    (uint256(marketIndex) << 240) |
+                    (uint256(fCashAmount) << 152) |
+                    (uint256(maxImpliedRate) << 120)
                 )
             );
     }

@@ -256,3 +256,64 @@ def test_redeem_post_maturity_underlying(wrapper, lender, env):
 
     assert wrapper.balanceOf(lender.address) == 50_000e8
     assert env.tokens["DAI"].balanceOf(lender.address) >= 50_000e18
+
+# Test fCash Trading
+def test_mint_and_redeem_fcash_via_underlying(wrapper, env):
+    env.tokens["DAI"].approve(wrapper.address, 2 ** 255 - 1, {'from': env.whales["DAI_EOA"].address})
+    wrapper.mintFromUnderlying(
+        10_000e8,
+        env.whales["DAI_EOA"].address,
+        {'from': env.whales["DAI_EOA"].address}
+    )
+
+    assert wrapper.balanceOf(env.whales["DAI_EOA"].address) == 10_000e8
+    portfolio = env.notional.getAccount(wrapper.address)[2]
+    assert portfolio[0][0] == wrapper.getCurrencyId()
+    assert portfolio[0][1] == wrapper.getMaturity()
+    assert portfolio[0][3] == 10_000e8
+    assert len(portfolio) == 1
+
+    # Now redeem the fCash
+    balanceBefore = env.tokens["DAI"].balanceOf(env.whales["DAI_EOA"].address)
+    wrapper.redeem(
+        10_000e8,
+        eth_abi.encode_abi(("bool", "bool"), [True, True]),
+        {"from": env.whales["DAI_EOA"].address}
+    )
+    balanceAfter = env.tokens["DAI"].balanceOf(env.whales["DAI_EOA"].address)
+    balanceChange = balanceAfter - balanceBefore 
+
+    assert 9700e18 <= balanceChange and balanceChange <= 9900e18
+    portfolio = env.notional.getAccount(wrapper.address)[2]
+    assert len(portfolio) == 0
+    assert wrapper.balanceOf(env.whales["DAI_EOA"].address) == 0
+
+def test_mint_and_redeem_fcash_via_asset(wrapper, env):
+    env.tokens["cDAI"].approve(wrapper.address, 2 ** 255 - 1, {'from': env.whales["cDAI"].address})
+    wrapper.mintFromAsset(
+        10_000e8,
+        env.whales["cDAI"].address,
+        {'from': env.whales["cDAI"].address}
+    )
+
+    assert wrapper.balanceOf(env.whales["cDAI"].address) == 10_000e8
+    portfolio = env.notional.getAccount(wrapper.address)[2]
+    assert portfolio[0][0] == wrapper.getCurrencyId()
+    assert portfolio[0][1] == wrapper.getMaturity()
+    assert portfolio[0][3] == 10_000e8
+    assert len(portfolio) == 1
+
+    # Now redeem the fCash
+    balanceBefore = env.tokens["cDAI"].balanceOf(env.whales["cDAI"].address)
+    wrapper.redeem(
+        10_000e8,
+        eth_abi.encode_abi(("bool", "bool"), [True, False]),
+        {"from": env.whales["cDAI"].address}
+    )
+    balanceAfter = env.tokens["cDAI"].balanceOf(env.whales["cDAI"].address)
+    balanceChange = balanceAfter - balanceBefore 
+
+    assert 440_000e8 <= balanceChange and balanceChange <= 450_000e8
+    portfolio = env.notional.getAccount(wrapper.address)[2]
+    assert len(portfolio) == 0
+    assert wrapper.balanceOf(env.whales["cDAI"].address) == 0

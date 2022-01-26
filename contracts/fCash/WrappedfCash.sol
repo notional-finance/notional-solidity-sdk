@@ -4,8 +4,10 @@ pragma experimental ABIEncoderV2;
 
 import "../lib/EncodeDecode.sol";
 import "../lib/DateTime.sol";
+import "../lib/SafeInt256.sol";
 import "../abstract/AllowfCashReceiver.sol";
 import "interfaces/notional/NotionalProxy.sol";
+import "interfaces/compound/ICToken.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -14,6 +16,7 @@ import "@openzeppelin-upgradeable/contracts/token/ERC777/ERC777Upgradeable.sol";
 
 contract WrappedfCash is ERC777Upgradeable, AllowfCashReceiver {
     using SafeERC20 for IERC20;
+    using SafeInt256 for int256;
 
     address internal constant ETH_ADDRESS = address(0);
     /// address to the NotionalV2 system
@@ -41,7 +44,10 @@ contract WrappedfCash is ERC777Upgradeable, AllowfCashReceiver {
 
         _fCashId = EncodeDecode.encodeERC1155Id(currencyId, maturity, Constants.FCASH_ASSET_TYPE);
         (IERC20 underlyingToken, /* */) = _getUnderlyingToken(currencyId);
-        string memory _symbol = IERC20Metadata(address(underlyingToken)).symbol();
+        string memory _symbol = address(underlyingToken) == address(0) ? 
+            "ETH" :
+            IERC20Metadata(address(underlyingToken)).symbol();
+
         string memory _maturity = Strings.toString(maturity);
 
         __ERC777_init(
@@ -56,7 +62,146 @@ contract WrappedfCash is ERC777Upgradeable, AllowfCashReceiver {
 
     /***** Mint Methods *****/
 
-    // TODO: add method for market lending to mint fCash
+    /// @notice Lends the corresponding fCash amount to the current contract and credits the
+    /// receiver with the corresponding amount of fCash shares. Will transfer cash from the
+    /// msg.sender. Uses the underlying token.
+    /// @param fCashAmount amount of fCash to purchase (lend)
+    /// @param receiver address to receive the fCash shares
+    function mintFromUnderlying(
+        uint256 fCashAmount,
+        address receiver
+    ) external {
+        (
+            uint8 marketIndex,
+            /* int256 assetCashInternal */,
+            int256 underlyingCashInternal
+        ) = _calculateMint(fCashAmount);
+        require(underlyingCashInternal < 0, "Trade error");
+        (IERC20 token, int256 underlyingPrecision) = getUnderlyingToken();
+
+        uint256 depositAmount = SafeInt256.toUint(
+            EncodeDecode.convertToExternal(
+                underlyingCashInternal.neg(),
+                underlyingPrecision
+            )
+        );
+
+        _executeLendTradeAndMint(
+            token,
+            depositAmount,
+            true,
+            marketIndex,
+            fCashAmount,
+            receiver
+        );
+    }
+
+    /// @notice Lends the corresponding fCash amount to the current contract and credits the
+    /// receiver with the corresponding amount of fCash shares. Will transfer cash from the
+    /// msg.sender. Uses the asset token (cToken).
+    /// @param fCashAmount amount of fCash to purchase (lend)
+    /// @param receiver address to receive the fCash shares
+    function mintFromAsset(
+        uint256 fCashAmount,
+        address receiver
+    ) external {
+        (
+            uint8 marketIndex,
+            int256 assetCashInternal,
+            /* int256 underlyingCashInternal*/
+        ) = _calculateMint(fCashAmount);
+        require(assetCashInternal < 0, "Trade error");
+        (IERC20 token, int256 underlyingPrecision, /* */) = getAssetToken();
+
+        uint256 depositAmount = SafeInt256.toUint(
+            EncodeDecode.convertToExternal(
+                assetCashInternal.neg(),
+                underlyingPrecision
+            )
+        );
+
+        _executeLendTradeAndMint(
+            token,
+            depositAmount,
+            false,
+            marketIndex,
+            fCashAmount,
+            receiver
+        );
+    }
+
+    /// @notice Calculates the amount of asset cash or underlying cash required to lend
+    function _calculateMint(
+        uint256 fCashAmount
+    ) internal returns (
+        uint8 marketIndex, 
+        int256 assetCashInternal,
+        int256 underlyingCashInternal
+    ) {
+        require(!hasMatured(), "fCash matured");
+        (IERC20 assetToken, /* */, TokenType tokenType) = getAssetToken();
+        if (tokenType == TokenType.cToken || tokenType == TokenType.cETH) {
+            // Accrue interest on cTokens first so calculate trade returns the appropriate
+            // amount
+            ICToken(address(assetToken)).accrueInterest();
+        }
+
+        uint8 marketIndex = getMarketIndex();
+        (assetCashInternal, underlyingCashInternal) = NotionalV2.getCashAmountGivenfCashAmount(
+            getCurrencyId(),
+            int88(SafeInt256.toInt(fCashAmount)),
+            marketIndex,
+            block.timestamp
+        );
+
+        return (
+            marketIndex,
+            _adjustForRounding(assetCashInternal),
+            _adjustForRounding(underlyingCashInternal)
+        );
+    }
+
+    /// @dev adjust the returned cash values for potential rounding issues in calculations
+    function _adjustForRounding(int256 x) private pure returns (int256) {
+        int256 y = x < 1e7 ? 1 : x / 1e7;
+        return x - y;
+    }
+
+    /// @dev Executes a lend trade and mints fCash shares back to the lender
+    function _executeLendTradeAndMint(
+        IERC20 token,
+        uint256 depositAmountExternal,
+        bool isUnderlying,
+        uint8 marketIndex,
+        uint256 _fCashAmount,
+        address receiver
+    ) internal {
+        require(_fCashAmount <= uint256(type(uint88).max));
+        uint88 fCashAmount = uint88(_fCashAmount);
+
+        uint256 balanceBefore = token.balanceOf(address(this));
+        token.safeTransferFrom(msg.sender, address(this), depositAmountExternal);
+
+        BalanceActionWithTrades[] memory action = new BalanceActionWithTrades[](1);
+        action[0].actionType = isUnderlying ? DepositActionType.DepositUnderlying : DepositActionType.DepositAsset;
+        action[0].depositActionAmount = depositAmountExternal;
+        action[0].currencyId = getCurrencyId();
+        action[0].withdrawEntireCashBalance = true;
+        action[0].redeemToUnderlying = true;
+        action[0].trades = new bytes32[](1);
+        action[0].trades[0] = EncodeDecode.encodeLendTrade(marketIndex, fCashAmount, 0);
+
+        token.safeApprove(address(NotionalV2), depositAmountExternal);
+        NotionalV2.batchBalanceAndTradeAction(address(this), action);
+
+        uint256 balanceAfter = token.balanceOf(address(this));
+
+        _mint(receiver, fCashAmount, "", "", false);
+
+        // Send any residuals from lending back to the sender
+        uint256 residual = balanceAfter - balanceBefore;
+        if (residual > 0) token.safeTransfer(msg.sender, residual);
+    }
 
     /// @notice This hook will be called every time this contract receives fCash, will validate that
     /// this is the correct fCash and then mint the corresponding amount of wrapped fCash tokens
@@ -174,17 +319,27 @@ contract WrappedfCash is ERC777Upgradeable, AllowfCashReceiver {
             // Transfer withdrawn tokens to the `from` address
             _withdrawCashToAccount(currencyId, from, uint88(assetInternalCashClaim), redeemToUnderlying);
         } else {
-            // If the fCash has not matured, then we can transfer it via ERC1155.
-            // NOTE: this will fail if the destination is a contract because the ERC1155 contract
-            // does a callback to the `onERC1155Received` hook. If that is the case it is possible
-            // to use a regular ERC20 transfer on this contract instead.
-            NotionalV2.safeTransferFrom(
-                address(this), // Sending from this contract
-                from,          // Destination is the address burning the fCash
-                getfCashId(),  // fCash identifier
-                amount,        // Amount of fCash to send
-                userData
-            );
+            bool redeemToUnderlying = false;
+            bool sellfCash = false;
+            if (userData.length > 0) {
+                (sellfCash, redeemToUnderlying) = abi.decode(userData, (bool, bool));
+            }
+
+            if (sellfCash) {
+                _sellfCash(from, amount, redeemToUnderlying);
+            } else {
+                // If the fCash has not matured, then we can transfer it via ERC1155.
+                // NOTE: this will fail if the destination is a contract because the ERC1155 contract
+                // does a callback to the `onERC1155Received` hook. If that is the case it is possible
+                // to use a regular ERC20 transfer on this contract instead.
+                NotionalV2.safeTransferFrom(
+                    address(this), // Sending from this contract
+                    from,          // Destination is the address burning the fCash
+                    getfCashId(),  // fCash identifier
+                    amount,        // Amount of fCash to send
+                    userData
+                );
+            }
         }
     }
 
@@ -200,7 +355,7 @@ contract WrappedfCash is ERC777Upgradeable, AllowfCashReceiver {
         if (redeemToUnderlying) {
             (token, /* */) = getUnderlyingToken();
         } else {
-            (token, /* */) = getAssetToken();
+            (token, /* */, /* */) = getAssetToken();
         }
 
         uint256 balanceBefore = token.balanceOf(address(this));
@@ -209,6 +364,40 @@ contract WrappedfCash is ERC777Upgradeable, AllowfCashReceiver {
         tokensTransferred = balanceAfter - balanceBefore;
 
         token.safeTransfer(receiver, tokensTransferred);
+    }
+
+    /// @dev Sells an fCash share back on the Notional AMM
+    function _sellfCash(
+        address receiver,
+        uint256 fCashToSell,
+        bool redeemToUnderlying
+    ) private returns (uint256 tokensTransferred) {
+        uint8 marketIndex = getMarketIndex();
+        IERC20 token;
+        require(fCashToSell <= uint256(type(uint88).max));
+        uint88 fCashAmount = uint88(fCashToSell);
+
+        if (redeemToUnderlying) {
+            (token, /* */) = getUnderlyingToken();
+        } else {
+            (token, /* */, /* */) = getAssetToken();
+        }
+
+        BalanceActionWithTrades[] memory action = new BalanceActionWithTrades[](1);
+        action[0].actionType = DepositActionType.None;
+        action[0].currencyId = getCurrencyId();
+        action[0].withdrawEntireCashBalance = true;
+        action[0].redeemToUnderlying = redeemToUnderlying;
+        action[0].trades = new bytes32[](1);
+        action[0].trades[0] = EncodeDecode.encodeBorrowTrade(marketIndex, fCashAmount, 0);
+
+        uint256 balanceBefore = token.balanceOf(address(this));
+        NotionalV2.batchBalanceAndTradeAction(address(this), action);
+        uint256 balanceAfter = token.balanceOf(address(this));
+
+        // Send any residuals from lending back to the sender
+        uint256 netCash = balanceAfter - balanceBefore;
+        token.safeTransfer(msg.sender, netCash);
     }
 
     /***** View Methods  *****/
@@ -241,6 +430,20 @@ contract WrappedfCash is ERC777Upgradeable, AllowfCashReceiver {
     /// @notice fCash is always denominated in 8 decimal places
     function decimals() public pure override returns (uint8) {
         return 8;
+    }
+
+    /// @notice Returns the current market index for this fCash asset. If this returns
+    /// zero that means it is idiosyncratic and cannot be traded.
+    function getMarketIndex() public view returns (uint8) {
+        (uint256 marketIndex, bool isIdiosyncratic) = DateTime.getMarketIndex(
+            Constants.MAX_TRADED_MARKET_INDEX,
+            getMaturity(),
+            block.timestamp
+        );
+
+        if (isIdiosyncratic) return 0;
+        // Market index as defined does not overflow this conversion
+        return uint8(marketIndex);
     }
 
     /// @notice Returns the token and precision of the token that this token settles
@@ -278,13 +481,13 @@ contract WrappedfCash is ERC777Upgradeable, AllowfCashReceiver {
     function getAssetToken()
         public
         view
-        returns (IERC20 underlyingToken, int256 underlyingPrecision)
+        returns (IERC20 underlyingToken, int256 underlyingPrecision, TokenType tokenType)
     {
         (Token memory asset, /* Token memory underlying */) = NotionalV2.getCurrency(
             getCurrencyId()
         );
 
-        return (IERC20(asset.tokenAddress), asset.decimals);
+        return (IERC20(asset.tokenAddress), asset.decimals, asset.tokenType);
     }
 
 }
