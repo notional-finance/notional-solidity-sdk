@@ -1,18 +1,20 @@
 require("dotenv/config");
 require("@nomiclabs/hardhat-etherscan");
 
-const NETWORKS_KOVAN_URL = process.env.NETWORKS_KOVAN_URL;
 const NETWORKS_MAINNET_URL = process.env.NETWORKS_MAINNET_URL;
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
 
 module.exports = {
   defaultNetwork: "hardhat",
   networks: {
-    kovan: {
-      url:  NETWORKS_KOVAN_URL
-    },
     mainnet: {
       url:  NETWORKS_MAINNET_URL
+    },
+    hardhat: {
+      hardfork: "london",
+      initialBaseFeePerGas: 0,
+      throwOnTransactionFailures: true,
+      throwOnCallFailures: true,
     },
   },
   solidity: {
