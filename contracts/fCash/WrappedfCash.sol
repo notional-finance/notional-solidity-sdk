@@ -7,14 +7,15 @@ import "../lib/DateTime.sol";
 import "../lib/SafeInt256.sol";
 import "../abstract/AllowfCashReceiver.sol";
 import "interfaces/notional/NotionalProxy.sol";
+import "interfaces/notional/IWrappedfCash.sol";
 import "interfaces/compound/ICToken.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin-upgradeable/contracts/token/ERC777/ERC777Upgradeable.sol";
 
-contract WrappedfCash is ERC777Upgradeable, AllowfCashReceiver {
+contract WrappedfCash is IWrappedfCash, ERC777Upgradeable, AllowfCashReceiver {
     using SafeERC20 for IERC20;
     using SafeInt256 for int256;
 
@@ -70,7 +71,7 @@ contract WrappedfCash is ERC777Upgradeable, AllowfCashReceiver {
     function mintFromUnderlying(
         uint256 fCashAmount,
         address receiver
-    ) external {
+    ) external override {
         (
             uint8 marketIndex,
             /* int256 assetCashInternal */,
@@ -104,7 +105,7 @@ contract WrappedfCash is ERC777Upgradeable, AllowfCashReceiver {
     function mintFromAsset(
         uint256 fCashAmount,
         address receiver
-    ) external {
+    ) external override {
         (
             uint8 marketIndex,
             int256 assetCashInternal,
@@ -146,7 +147,7 @@ contract WrappedfCash is ERC777Upgradeable, AllowfCashReceiver {
             ICToken(address(assetToken)).accrueInterest();
         }
 
-        uint8 marketIndex = getMarketIndex();
+        marketIndex = getMarketIndex();
         (assetCashInternal, underlyingCashInternal) = NotionalV2.getCashAmountGivenfCashAmount(
             getCurrencyId(),
             int88(SafeInt256.toInt(fCashAmount)),
@@ -163,7 +164,7 @@ contract WrappedfCash is ERC777Upgradeable, AllowfCashReceiver {
 
     /// @dev adjust the returned cash values for potential rounding issues in calculations
     function _adjustForRounding(int256 x) private pure returns (int256) {
-        int256 y = x < 1e7 ? 1 : x / 1e7;
+        int256 y = (x < 1e7) ? int256(1) : (x / 1e7);
         return x - y;
     }
 
@@ -267,7 +268,7 @@ contract WrappedfCash is ERC777Upgradeable, AllowfCashReceiver {
     /***** Redeem (Burn) Methods *****/
 
     /// @notice Provide a less dangerous sounding alias for `burn`
-    function redeem(uint256 amount, bytes memory data) external {
+    function redeem(uint256 amount, bytes memory data) external override {
         burn(amount, data);
     }
 
@@ -277,7 +278,7 @@ contract WrappedfCash is ERC777Upgradeable, AllowfCashReceiver {
         uint256 amount,
         bytes memory data,
         bytes memory operatorData
-    ) external {
+    ) external override {
         operatorBurn(account, amount, data, operatorData);
     }
 
@@ -403,27 +404,27 @@ contract WrappedfCash is ERC777Upgradeable, AllowfCashReceiver {
     /***** View Methods  *****/
 
     /// @notice Returns the underlying fCash ID of the token
-    function getfCashId() public view returns (uint256) {
+    function getfCashId() public view override returns (uint256) {
         return _fCashId;
     }
 
     /// @notice Returns the underlying fCash maturity of the token
-    function getMaturity() public view returns (uint40 maturity) {
+    function getMaturity() public view override returns (uint40 maturity) {
         (/* */, maturity, /* */) = EncodeDecode.decodeERC1155Id(_fCashId);
     }
 
     /// @notice True if the fCash has matured, assets mature exactly on the block time
-    function hasMatured() public view returns (bool) {
+    function hasMatured() public view override returns (bool) {
         return getMaturity() <= block.timestamp;
     }
 
     /// @notice Returns the underlying fCash currency
-    function getCurrencyId() public view returns (uint16 currencyId) {
+    function getCurrencyId() public view override returns (uint16 currencyId) {
         (currencyId, /* */, /* */) = EncodeDecode.decodeERC1155Id(_fCashId);
     }
 
     /// @notice Returns the components of the fCash idd
-    function getDecodedID() public view returns (uint16 currencyId, uint40 maturity) {
+    function getDecodedID() public view override returns (uint16 currencyId, uint40 maturity) {
         (currencyId, maturity, /* */) = EncodeDecode.decodeERC1155Id(_fCashId);
     }
 
@@ -434,7 +435,7 @@ contract WrappedfCash is ERC777Upgradeable, AllowfCashReceiver {
 
     /// @notice Returns the current market index for this fCash asset. If this returns
     /// zero that means it is idiosyncratic and cannot be traded.
-    function getMarketIndex() public view returns (uint8) {
+    function getMarketIndex() public view override returns (uint8) {
         (uint256 marketIndex, bool isIdiosyncratic) = DateTime.getMarketIndex(
             Constants.MAX_TRADED_MARKET_INDEX,
             getMaturity(),
@@ -452,6 +453,7 @@ contract WrappedfCash is ERC777Upgradeable, AllowfCashReceiver {
     function getUnderlyingToken()
         public
         view
+        override 
         returns (IERC20 underlyingToken, int256 underlyingPrecision)
     {
         uint16 currencyId = getCurrencyId();
@@ -481,6 +483,7 @@ contract WrappedfCash is ERC777Upgradeable, AllowfCashReceiver {
     function getAssetToken()
         public
         view
+        override 
         returns (IERC20 underlyingToken, int256 underlyingPrecision, TokenType tokenType)
     {
         (Token memory asset, /* Token memory underlying */) = NotionalV2.getCurrency(
