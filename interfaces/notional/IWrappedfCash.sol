@@ -10,7 +10,6 @@ interface IWrappedfCash {
         bool redeemToUnderlying;
         bool transferfCash;
         address receiver;
-        uint256 exchangeToMaturity;
     }
 
     function mintFromUnderlying(uint256 fCashAmount, address receiver) external payable;
@@ -19,7 +18,6 @@ interface IWrappedfCash {
     function redeem(uint256 amount, RedeemOpts memory data) external;
     function redeemToAsset(uint256 amount, address receiver) external;
     function redeemToUnderlying(uint256 amount, address receiver) external;
-    function redeemTofCash(uint256 amount, uint256 exchangeToMaturity, address receiver) external;
 
     /// @notice Returns the underlying fCash ID of the token
     function getfCashId() external view returns (uint256);

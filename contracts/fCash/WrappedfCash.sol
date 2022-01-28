@@ -277,8 +277,7 @@ contract WrappedfCash is IWrappedfCash, ERC777Upgradeable, AllowfCashReceiver {
         redeem(amount, RedeemOpts({
             redeemToUnderlying: false,
             transferfCash: false,
-            receiver: receiver,
-            exchangeToMaturity: 0
+            receiver: receiver
         }));
     }
 
@@ -286,17 +285,7 @@ contract WrappedfCash is IWrappedfCash, ERC777Upgradeable, AllowfCashReceiver {
         redeem(amount, RedeemOpts({
             redeemToUnderlying: true,
             transferfCash: false,
-            receiver: receiver,
-            exchangeToMaturity: 0
-        }));
-    }
-
-    function redeemTofCash(uint256 amount, uint256 exchangeToMaturity, address receiver) external override {
-        redeem(amount, RedeemOpts({
-            redeemToUnderlying: false,
-            transferfCash: false,
-            receiver: receiver,
-            exchangeToMaturity: exchangeToMaturity
+            receiver: receiver
         }));
     }
 
@@ -345,8 +334,6 @@ contract WrappedfCash is IWrappedfCash, ERC777Upgradeable, AllowfCashReceiver {
                 amount,         // Amount of fCash to send
                 userData
             );
-        } else if (opts.exchangeToMaturity != 0) {
-            // _exchangefCash(opts.receiver, amount, opts.exchangeToMaturity);
         } else {
             _sellfCash(opts.receiver, amount, opts.redeemToUnderlying);
         }

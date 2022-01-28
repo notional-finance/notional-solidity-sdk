@@ -101,14 +101,17 @@ contract WrappedfCashTradeAdapter is IExchangeAdapter {
         _mintWrapper.mintFromAsset(fCashToMint, receiver);
         uint256 endingBalance = assetToken.balanceOf(address(this));
 
+        // Transfer any residuals back to the sender
         assetToken.transfer(msg.sender, endingBalance - startingBalance);
     }
 
     function isAssetToken(address token) public view returns (bool) {
+        // TODO: how to determine this?
         return true;
     }
 
     function isfCashWrapper(address token) public view returns (bool) {
+        // TODO: how to determine this?
         return true;
     }
 }
