@@ -191,9 +191,9 @@ def test_fail_redeem_above_balance(wrapper, lender, env):
     )
 
     with brownie.reverts():
-        wrapper.redeem(105_000e8, "", {"from": lender})
+        wrapper.redeem(105_000e8, (False, False, lender, 0), {"from": lender})
 
-def test_redeem_fcash_pre_maturity(wrapper, lender, env):
+def test_transfer_fcash(wrapper, lender, env):
     env.notional.safeTransferFrom(
         lender.address,
         wrapper.address,
@@ -202,12 +202,12 @@ def test_redeem_fcash_pre_maturity(wrapper, lender, env):
         "",
         {"from": lender}
     )
-    wrapper.redeem(50_000e8, b'', {"from": lender})
+    wrapper.redeem(50_000e8, (False, True, lender, 0), {"from": lender})
 
     assert wrapper.balanceOf(lender.address) == 50_000e8
     assert env.notional.balanceOf(lender.address, wrapper.getfCashId()) == 50_000e8
 
-def test_redeem_fcash_pre_maturity_contract(wrapper, lender_contract, env):
+def test_transfer_fcash_contract(wrapper, lender_contract, env):
     env.notional.safeTransferFrom(
         lender_contract.address,
         wrapper.address,
@@ -218,7 +218,11 @@ def test_redeem_fcash_pre_maturity_contract(wrapper, lender_contract, env):
     )
 
     with brownie.reverts():
-        wrapper.redeem(50_000e8, b'', {"from": lender_contract})
+        wrapper.redeem(
+            50_000e8,
+            (False, True, lender_contract, 0),
+            {"from": lender_contract}
+        )
 
     wrapper.transfer(env.deployer, 50_000e8, {"from": lender_contract})
 
@@ -236,7 +240,7 @@ def test_redeem_post_maturity_asset(wrapper, lender, env):
     )
 
     chain.mine(1, timestamp=wrapper.getMaturity())
-    wrapper.redeem(50_000e8, b'', {"from": lender})
+    wrapper.redeemToAsset(50_000e8, lender.address, {"from": lender})
 
     assert wrapper.balanceOf(lender.address) == 50_000e8
     assert env.tokens["cDAI"].balanceOf(lender.address) == 229452921165321
@@ -252,7 +256,7 @@ def test_redeem_post_maturity_underlying(wrapper, lender, env):
     )
 
     chain.mine(1, timestamp=wrapper.getMaturity())
-    wrapper.redeem(50_000e8, eth_abi.encode_single("bool", True), {"from": lender})
+    wrapper.redeemToUnderlying(50_000e8, lender, {"from": lender})
 
     assert wrapper.balanceOf(lender.address) == 50_000e8
     assert env.tokens["DAI"].balanceOf(lender.address) >= 50_000e18
@@ -275,9 +279,9 @@ def test_mint_and_redeem_fcash_via_underlying(wrapper, env):
 
     # Now redeem the fCash
     balanceBefore = env.tokens["DAI"].balanceOf(env.whales["DAI_EOA"].address)
-    wrapper.redeem(
+    wrapper.redeemToUnderlying(
         10_000e8,
-        eth_abi.encode_abi(("bool", "bool"), [True, True]),
+        env.whales["DAI_EOA"].address,
         {"from": env.whales["DAI_EOA"].address}
     )
     balanceAfter = env.tokens["DAI"].balanceOf(env.whales["DAI_EOA"].address)
@@ -305,9 +309,9 @@ def test_mint_and_redeem_fcash_via_asset(wrapper, env):
 
     # Now redeem the fCash
     balanceBefore = env.tokens["cDAI"].balanceOf(env.whales["cDAI"].address)
-    wrapper.redeem(
+    wrapper.redeemToAsset(
         10_000e8,
-        eth_abi.encode_abi(("bool", "bool"), [True, False]),
+        env.whales["cDAI"].address,
         {"from": env.whales["cDAI"].address}
     )
     balanceAfter = env.tokens["cDAI"].balanceOf(env.whales["cDAI"].address)

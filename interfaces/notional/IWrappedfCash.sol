@@ -3,14 +3,23 @@ pragma solidity ^0.8.0;
 
 import {TokenType} from "../../contracts/lib/Types.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin-upgradeable/contracts/token/ERC777/IERC777Upgradeable.sol";
+import "@openzeppelin/contracts/token/ERC777/IERC777.sol";
 
 interface IWrappedfCash {
+    struct RedeemOpts {
+        bool redeemToUnderlying;
+        bool transferfCash;
+        address receiver;
+        uint256 exchangeToMaturity;
+    }
 
-    function mintFromUnderlying(uint256 fCashAmount, address receiver) external;
+    function mintFromUnderlying(uint256 fCashAmount, address receiver) external payable;
     function mintFromAsset(uint256 fCashAmount, address receiver) external;
-    function redeem(uint256 amount, bytes memory data) external;
-    function operatorRedeem(address account, uint256 amount, bytes memory data, bytes memory operatorData) external;
+
+    function redeem(uint256 amount, RedeemOpts memory data) external;
+    function redeemToAsset(uint256 amount, address receiver) external;
+    function redeemToUnderlying(uint256 amount, address receiver) external;
+    function redeemTofCash(uint256 amount, uint256 exchangeToMaturity, address receiver) external;
 
     /// @notice Returns the underlying fCash ID of the token
     function getfCashId() external view returns (uint256);
@@ -42,4 +51,4 @@ interface IWrappedfCash {
 }
 
 
-interface IWrappedfCashComplete is IWrappedfCash, IERC777Upgradeable {} 
+interface IWrappedfCashComplete is IWrappedfCash, IERC777 {} 

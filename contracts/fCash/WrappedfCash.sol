@@ -71,7 +71,7 @@ contract WrappedfCash is IWrappedfCash, ERC777Upgradeable, AllowfCashReceiver {
     function mintFromUnderlying(
         uint256 fCashAmount,
         address receiver
-    ) external override {
+    ) external payable override {
         (
             uint8 marketIndex,
             /* int256 assetCashInternal */,
@@ -180,6 +180,7 @@ contract WrappedfCash is IWrappedfCash, ERC777Upgradeable, AllowfCashReceiver {
         require(_fCashAmount <= uint256(type(uint88).max));
         uint88 fCashAmount = uint88(_fCashAmount);
 
+        // TODO: need to handle ETH here
         uint256 balanceBefore = token.balanceOf(address(this));
         token.safeTransferFrom(msg.sender, address(this), depositAmountExternal);
 
@@ -267,19 +268,36 @@ contract WrappedfCash is IWrappedfCash, ERC777Upgradeable, AllowfCashReceiver {
 
     /***** Redeem (Burn) Methods *****/
 
-    /// @notice Provide a less dangerous sounding alias for `burn`
-    function redeem(uint256 amount, bytes memory data) external override {
+    function redeem(uint256 amount, RedeemOpts memory opts) public override {
+        bytes memory data = abi.encode(opts);
         burn(amount, data);
     }
 
-    /// @notice Provide a less dangerous sounding alias for `operatorBurn`
-    function operatorRedeem(
-        address account,
-        uint256 amount,
-        bytes memory data,
-        bytes memory operatorData
-    ) external override {
-        operatorBurn(account, amount, data, operatorData);
+    function redeemToAsset(uint256 amount, address receiver) external override {
+        redeem(amount, RedeemOpts({
+            redeemToUnderlying: false,
+            transferfCash: false,
+            receiver: receiver,
+            exchangeToMaturity: 0
+        }));
+    }
+
+    function redeemToUnderlying(uint256 amount, address receiver) external override {
+        redeem(amount, RedeemOpts({
+            redeemToUnderlying: true,
+            transferfCash: false,
+            receiver: receiver,
+            exchangeToMaturity: 0
+        }));
+    }
+
+    function redeemTofCash(uint256 amount, uint256 exchangeToMaturity, address receiver) external override {
+        redeem(amount, RedeemOpts({
+            redeemToUnderlying: false,
+            transferfCash: false,
+            receiver: receiver,
+            exchangeToMaturity: exchangeToMaturity
+        }));
     }
 
     /// @notice Called before tokens are burned (redemption) and so we will handle
@@ -292,6 +310,8 @@ contract WrappedfCash is IWrappedfCash, ERC777Upgradeable, AllowfCashReceiver {
     ) internal override {
         // Save the total supply value before burning to calculate the cash claim share
         uint256 initialTotalSupply = totalSupply();
+        RedeemOpts memory opts = abi.decode(userData, (RedeemOpts));
+        require(opts.receiver != address(0), "Receiver is zero address");
         // This will validate that the account has sufficient tokens to burn and make
         // any relevant underlying stateful changes to balances.
         super._burn(from, amount, userData, operatorData);
@@ -311,36 +331,24 @@ contract WrappedfCash is IWrappedfCash, ERC777Upgradeable, AllowfCashReceiver {
             uint256 assetInternalCashClaim = (uint256(cashBalance) * amount) / initialTotalSupply;
             require(assetInternalCashClaim <= uint256(type(uint88).max));
 
-            // By default will redeem to asset tokens
-            bool redeemToUnderlying = false;
-            if (userData.length > 0) {
-                (redeemToUnderlying) = abi.decode(userData, (bool));
-            }
-
             // Transfer withdrawn tokens to the `from` address
-            _withdrawCashToAccount(currencyId, from, uint88(assetInternalCashClaim), redeemToUnderlying);
+            _withdrawCashToAccount(currencyId, from, uint88(assetInternalCashClaim), opts.redeemToUnderlying);
+        } else if (opts.transferfCash) {
+            // If the fCash has not matured, then we can transfer it via ERC1155.
+            // NOTE: this will fail if the destination is a contract because the ERC1155 contract
+            // does a callback to the `onERC1155Received` hook. If that is the case it is possible
+            // to use a regular ERC20 transfer on this contract instead.
+            NotionalV2.safeTransferFrom(
+                address(this),  // Sending from this contract
+                opts.receiver,  // Where to send the fCash
+                getfCashId(),   // fCash identifier
+                amount,         // Amount of fCash to send
+                userData
+            );
+        } else if (opts.exchangeToMaturity != 0) {
+            // _exchangefCash(opts.receiver, amount, opts.exchangeToMaturity);
         } else {
-            bool redeemToUnderlying = false;
-            bool sellfCash = false;
-            if (userData.length > 0) {
-                (sellfCash, redeemToUnderlying) = abi.decode(userData, (bool, bool));
-            }
-
-            if (sellfCash) {
-                _sellfCash(from, amount, redeemToUnderlying);
-            } else {
-                // If the fCash has not matured, then we can transfer it via ERC1155.
-                // NOTE: this will fail if the destination is a contract because the ERC1155 contract
-                // does a callback to the `onERC1155Received` hook. If that is the case it is possible
-                // to use a regular ERC20 transfer on this contract instead.
-                NotionalV2.safeTransferFrom(
-                    address(this), // Sending from this contract
-                    from,          // Destination is the address burning the fCash
-                    getfCashId(),  // fCash identifier
-                    amount,        // Amount of fCash to send
-                    userData
-                );
-            }
+            _sellfCash(opts.receiver, amount, opts.redeemToUnderlying);
         }
     }
 
@@ -349,18 +357,18 @@ contract WrappedfCash is IWrappedfCash, ERC777Upgradeable, AllowfCashReceiver {
         uint16 currencyId,
         address receiver,
         uint88 assetInternalCashClaim,
-        bool redeemToUnderlying
+        bool toUnderlying
     ) private returns (uint256 tokensTransferred) {
         IERC20 token;
 
-        if (redeemToUnderlying) {
+        if (toUnderlying) {
             (token, /* */) = getUnderlyingToken();
         } else {
             (token, /* */, /* */) = getAssetToken();
         }
 
         uint256 balanceBefore = token.balanceOf(address(this));
-        NotionalV2.withdraw(currencyId, assetInternalCashClaim, redeemToUnderlying);
+        NotionalV2.withdraw(currencyId, assetInternalCashClaim, toUnderlying);
         uint256 balanceAfter = token.balanceOf(address(this));
         tokensTransferred = balanceAfter - balanceBefore;
 
@@ -371,14 +379,14 @@ contract WrappedfCash is IWrappedfCash, ERC777Upgradeable, AllowfCashReceiver {
     function _sellfCash(
         address receiver,
         uint256 fCashToSell,
-        bool redeemToUnderlying
+        bool toUnderlying
     ) private returns (uint256 tokensTransferred) {
         uint8 marketIndex = getMarketIndex();
         IERC20 token;
         require(fCashToSell <= uint256(type(uint88).max));
         uint88 fCashAmount = uint88(fCashToSell);
 
-        if (redeemToUnderlying) {
+        if (toUnderlying) {
             (token, /* */) = getUnderlyingToken();
         } else {
             (token, /* */, /* */) = getAssetToken();
@@ -388,7 +396,7 @@ contract WrappedfCash is IWrappedfCash, ERC777Upgradeable, AllowfCashReceiver {
         action[0].actionType = DepositActionType.None;
         action[0].currencyId = getCurrencyId();
         action[0].withdrawEntireCashBalance = true;
-        action[0].redeemToUnderlying = redeemToUnderlying;
+        action[0].redeemToUnderlying = toUnderlying;
         action[0].trades = new bytes32[](1);
         action[0].trades[0] = EncodeDecode.encodeBorrowTrade(marketIndex, fCashAmount, 0);
 
@@ -398,7 +406,7 @@ contract WrappedfCash is IWrappedfCash, ERC777Upgradeable, AllowfCashReceiver {
 
         // Send any residuals from lending back to the sender
         uint256 netCash = balanceAfter - balanceBefore;
-        token.safeTransfer(msg.sender, netCash);
+        token.safeTransfer(receiver, netCash);
     }
 
     /***** View Methods  *****/
