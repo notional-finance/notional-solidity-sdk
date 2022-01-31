@@ -37,7 +37,7 @@ contract WrappedfCash is IWrappedfCash, ERC777Upgradeable, AllowfCashReceiver {
     function initialize(
         uint16 currencyId,
         uint40 maturity
-    ) external initializer {
+    ) external override initializer {
         (CashGroupSettings memory cashGroup) = NotionalV2.getCashGroup(currencyId);
         require(cashGroup.maxMarketIndex > 0, "Invalid currency");
         // This includes idiosyncratic fCash maturities
@@ -80,11 +80,9 @@ contract WrappedfCash is IWrappedfCash, ERC777Upgradeable, AllowfCashReceiver {
         require(underlyingCashInternal < 0, "Trade error");
         (IERC20 token, int256 underlyingPrecision) = getUnderlyingToken();
 
-        uint256 depositAmount = SafeInt256.toUint(
-            EncodeDecode.convertToExternal(
-                underlyingCashInternal.neg(),
-                underlyingPrecision
-            )
+        uint256 depositAmount = EncodeDecode.convertToExternalDepositAmount(
+            underlyingCashInternal.neg(),
+            underlyingPrecision
         );
 
         _executeLendTradeAndMint(
@@ -114,11 +112,9 @@ contract WrappedfCash is IWrappedfCash, ERC777Upgradeable, AllowfCashReceiver {
         require(assetCashInternal < 0, "Trade error");
         (IERC20 token, int256 underlyingPrecision, /* */) = getAssetToken();
 
-        uint256 depositAmount = SafeInt256.toUint(
-            EncodeDecode.convertToExternal(
-                assetCashInternal.neg(),
-                underlyingPrecision
-            )
+        uint256 depositAmount = EncodeDecode.convertToExternalDepositAmount(
+            assetCashInternal.neg(),
+            underlyingPrecision
         );
 
         _executeLendTradeAndMint(

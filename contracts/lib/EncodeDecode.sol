@@ -17,6 +17,19 @@ library EncodeDecode {
         return amount.mul(decimals).div(Constants.INTERNAL_TOKEN_PRECISION);
     }
 
+    function convertToExternalDepositAmount(
+        int256 amount,
+        int256 decimals
+    ) internal pure returns (uint256) {
+        if (decimals == Constants.INTERNAL_TOKEN_PRECISION) return amount.toUint();
+        int256 val = amount.mul(decimals).div(Constants.INTERNAL_TOKEN_PRECISION);
+        
+        // Handles rounding errors for smaller token precisions
+        if (decimals < Constants.INTERNAL_TOKEN_PRECISION) val += 1;
+
+        return val.toUint();
+    }
+
     function convertToInternal(
         int256 amount,
         int256 decimals

@@ -11,6 +11,7 @@ interface IWrappedfCash {
         bool transferfCash;
         address receiver;
     }
+    function initialize(uint16 currencyId, uint40 maturity) external;
 
     function mintFromUnderlying(uint256 fCashAmount, address receiver) external payable;
     function mintFromAsset(uint256 fCashAmount, address receiver) external;
@@ -45,7 +46,7 @@ interface IWrappedfCash {
 
     /// @notice Returns the asset token which the fCash settles to. This will be an interest
     /// bearing token like a cToken or aToken.
-    function getAssetToken() external view returns (IERC20 underlyingToken, int256 underlyingPrecision, TokenType tokenType);
+    function getAssetToken() external view returns (IERC20 assetToken, int256 assetPrecision, TokenType tokenType);
 }
 
 
