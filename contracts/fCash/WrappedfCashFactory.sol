@@ -20,9 +20,10 @@ contract WrappedfCashFactory {
         return abi.encodePacked(type(BeaconProxy).creationCode, abi.encode(beacon, initCallData));
     }
 
-    function deployWrapper(uint16 currencyId, uint40 maturity) external {
+    function deployWrapper(uint16 currencyId, uint40 maturity) external returns (address) {
         address wrapper = Create2.deploy(0, SALT, _getByteCode(currencyId, maturity));
         emit WrapperDeployed(currencyId, maturity, wrapper);
+        return wrapper;
     }
 
     function computeAddress(uint16 currencyId, uint40 maturity) external view returns (address) {
