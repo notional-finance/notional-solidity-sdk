@@ -176,9 +176,23 @@ contract WrappedfCash is IWrappedfCash, ERC777Upgradeable, AllowfCashReceiver {
         require(_fCashAmount <= uint256(type(uint88).max));
         uint88 fCashAmount = uint88(_fCashAmount);
 
-        // TODO: need to handle ETH here
-        uint256 balanceBefore = token.balanceOf(address(this));
-        token.safeTransferFrom(msg.sender, address(this), depositAmountExternal);
+        uint256 balanceBefore;
+        uint256 ethValue;
+        if (address(token) == ETH_ADDRESS) {
+            // If ETH is specified, it is paid directly to the mintFromUnderlying method
+            // balanceBefore is the balance of the contract previous to the ETH sent via msg.value
+            balanceBefore = address(this).balance - msg.value;
+            require(msg.value >= depositAmountExternal, "Insufficient ETH");
+            // Only send the depositAmountExternal to Notional V2, we will refund excess at the end of
+            // this method
+            ethValue = depositAmountExternal;
+        } else {
+            balanceBefore = token.balanceOf(address(this));
+            token.safeTransferFrom(msg.sender, address(this), depositAmountExternal);
+            token.safeApprove(address(NotionalV2), depositAmountExternal);
+            // ETH should not be sent when transferring tokens
+            require(msg.value == 0, "Unexpected ETH");
+        }
 
         BalanceActionWithTrades[] memory action = new BalanceActionWithTrades[](1);
         action[0].actionType = isUnderlying ? DepositActionType.DepositUnderlying : DepositActionType.DepositAsset;
@@ -189,16 +203,22 @@ contract WrappedfCash is IWrappedfCash, ERC777Upgradeable, AllowfCashReceiver {
         action[0].trades = new bytes32[](1);
         action[0].trades[0] = EncodeDecode.encodeLendTrade(marketIndex, fCashAmount, 0);
 
-        token.safeApprove(address(NotionalV2), depositAmountExternal);
-        NotionalV2.batchBalanceAndTradeAction(address(this), action);
+        NotionalV2.batchBalanceAndTradeAction{value: ethValue}(address(this), action);
 
-        uint256 balanceAfter = token.balanceOf(address(this));
+        uint256 balanceAfter = address(token) == ETH_ADDRESS ? address(this).balance : token.balanceOf(address(this));
 
         _mint(receiver, fCashAmount, "", "", false);
 
         // Send any residuals from lending back to the sender
         uint256 residual = balanceAfter - balanceBefore;
-        if (residual > 0) token.safeTransfer(msg.sender, residual);
+        if (residual > 0) {
+            if (address(token) == ETH_ADDRESS) {
+                // NOTE: this is the last statement in the transaction so reentrancy risk is limited
+                payable(msg.sender).call{value: residual}("");
+            } else {
+                token.safeTransfer(msg.sender, residual);
+            }
+        }
     }
 
     /// @notice This hook will be called every time this contract receives fCash, will validate that
@@ -350,12 +370,17 @@ contract WrappedfCash is IWrappedfCash, ERC777Upgradeable, AllowfCashReceiver {
             (token, /* */, /* */) = getAssetToken();
         }
 
-        uint256 balanceBefore = token.balanceOf(address(this));
+        bool isETH = address(token) == ETH_ADDRESS;
+        uint256 balanceBefore = isETH ? address(this).balance : token.balanceOf(address(this));
         NotionalV2.withdraw(currencyId, assetInternalCashClaim, toUnderlying);
-        uint256 balanceAfter = token.balanceOf(address(this));
-        tokensTransferred = balanceAfter - balanceBefore;
+        uint256 balanceAfter = isETH ?  address(this).balance : token.balanceOf(address(this));
 
-        token.safeTransfer(receiver, tokensTransferred);
+        tokensTransferred = balanceAfter - balanceBefore;
+        if (isETH) {
+            payable(receiver).call{value: tokensTransferred}("");
+        } else {
+            token.safeTransfer(receiver, tokensTransferred);
+        }
     }
 
     /// @dev Sells an fCash share back on the Notional AMM
@@ -383,13 +408,18 @@ contract WrappedfCash is IWrappedfCash, ERC777Upgradeable, AllowfCashReceiver {
         action[0].trades = new bytes32[](1);
         action[0].trades[0] = EncodeDecode.encodeBorrowTrade(marketIndex, fCashAmount, 0);
 
-        uint256 balanceBefore = token.balanceOf(address(this));
+        bool isETH = address(token) == ETH_ADDRESS;
+        uint256 balanceBefore = isETH ? address(this).balance : token.balanceOf(address(this));
         NotionalV2.batchBalanceAndTradeAction(address(this), action);
-        uint256 balanceAfter = token.balanceOf(address(this));
+        uint256 balanceAfter = isETH ?  address(this).balance : token.balanceOf(address(this));
 
         // Send any residuals from lending back to the sender
-        uint256 netCash = balanceAfter - balanceBefore;
-        token.safeTransfer(receiver, netCash);
+        tokensTransferred = balanceAfter - balanceBefore;
+        if (isETH) {
+            payable(receiver).call{value: tokensTransferred}("");
+        } else {
+            token.safeTransfer(receiver, tokensTransferred);
+        }
     }
 
     /***** View Methods  *****/

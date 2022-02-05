@@ -358,4 +358,36 @@ def test_mint_and_redeem_fcash_via_asset(wrapper, env):
     assert len(portfolio) == 0
     assert wrapper.balanceOf(env.whales["cDAI"].address) == 0
 
-# TODO: Test fETH specifically
+def test_mint_and_redeem_feth_via_underlying(factory, env):
+    markets = env.notional.getActiveMarkets(1)
+    txn = factory.deployWrapper(1, markets[0][1])
+    wrapper = Contract.from_abi("Wrapper", txn.events['WrapperDeployed']['wrapper'], WrappedfCash.abi)
+
+    wrapper.mintFromUnderlying(
+        10e8,
+        env.whales["ETH_EOA"].address,
+        {'from': env.whales["ETH_EOA"].address, "value": 10e18}
+    )
+
+    assert wrapper.balanceOf(env.whales["ETH_EOA"].address) == 10e8
+    assert wrapper.balance() == 0
+    portfolio = env.notional.getAccount(wrapper.address)[2]
+    assert portfolio[0][0] == wrapper.getCurrencyId()
+    assert portfolio[0][1] == wrapper.getMaturity()
+    assert portfolio[0][3] == 10e8
+    assert len(portfolio) == 1
+
+    # Now redeem the fCash
+    balanceBefore = env.whales["ETH_EOA"].balance()
+    wrapper.redeemToUnderlying(
+        10e8,
+        env.whales["ETH_EOA"].address,
+        {"from": env.whales["ETH_EOA"].address}
+    )
+    balanceAfter = env.whales["ETH_EOA"].balance()
+    balanceChange = balanceAfter - balanceBefore 
+
+    assert 9.90e18 <= balanceChange and balanceChange <= 9.99e18
+    portfolio = env.notional.getAccount(wrapper.address)[2]
+    assert len(portfolio) == 0
+    assert wrapper.balanceOf(env.whales["ETH_EOA"].address) == 0
