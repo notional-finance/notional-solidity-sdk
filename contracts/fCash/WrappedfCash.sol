@@ -13,9 +13,10 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin-upgradeable/contracts/token/ERC777/ERC777Upgradeable.sol";
 
-contract WrappedfCash is IWrappedfCash, ERC777Upgradeable, AllowfCashReceiver {
+contract WrappedfCash is IWrappedfCash, ERC777Upgradeable, AllowfCashReceiver, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using SafeInt256 for int256;
 
@@ -172,7 +173,7 @@ contract WrappedfCash is IWrappedfCash, ERC777Upgradeable, AllowfCashReceiver {
         uint8 marketIndex,
         uint256 _fCashAmount,
         address receiver
-    ) internal {
+    ) internal nonReentrant {
         require(_fCashAmount <= uint256(type(uint88).max));
         uint88 fCashAmount = uint88(_fCashAmount);
 
@@ -312,7 +313,7 @@ contract WrappedfCash is IWrappedfCash, ERC777Upgradeable, AllowfCashReceiver {
         uint256 amount,
         bytes memory userData,
         bytes memory operatorData
-    ) internal override {
+    ) internal override nonReentrant {
         // Save the total supply value before burning to calculate the cash claim share
         uint256 initialTotalSupply = totalSupply();
         RedeemOpts memory opts = abi.decode(userData, (RedeemOpts));
