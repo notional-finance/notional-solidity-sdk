@@ -16,12 +16,15 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin-upgradeable/contracts/token/ERC777/ERC777Upgradeable.sol";
 
+/// @dev This implementation contract is deployed as an UpgradeableBeacon. Each BeaconProxy
+/// that uses this contract as an implementation will call initialize to set its own fCash id.
+/// That identifier will represent the fCash that this ERC20 wrapper can hold.
 contract WrappedfCash is IWrappedfCash, ERC777Upgradeable, AllowfCashReceiver, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using SafeInt256 for int256;
 
     address internal constant ETH_ADDRESS = address(0);
-    /// address to the NotionalV2 system
+    /// @notice address to the NotionalV2 system
     NotionalProxy public immutable NotionalV2;
 
     /// @dev Storage slot for fCash id. Read only and set on initialization
@@ -41,12 +44,15 @@ contract WrappedfCash is IWrappedfCash, ERC777Upgradeable, AllowfCashReceiver, R
     ) external override initializer {
         (CashGroupSettings memory cashGroup) = NotionalV2.getCashGroup(currencyId);
         require(cashGroup.maxMarketIndex > 0, "Invalid currency");
-        // This includes idiosyncratic fCash maturities
+        // Ensure that the maturity is not past the max market index, also ensure that the maturity
+        // is not in the past. This statement will allow idiosyncratic (non-tradable) fCash assets.
         require(DateTime.isValidMaturity(cashGroup.maxMarketIndex, maturity, block.timestamp), "Invalid maturity");
 
         _fCashId = EncodeDecode.encodeERC1155Id(currencyId, maturity, Constants.FCASH_ASSET_TYPE);
         (IERC20 underlyingToken, /* */) = _getUnderlyingToken(currencyId);
-        string memory _symbol = address(underlyingToken) == address(0) ? 
+        (IERC20 assetToken, /* */, /* */) = getAssetToken();
+
+        string memory _symbol = address(underlyingToken) == ETH_ADDRESS ? 
             "ETH" :
             IERC20Metadata(address(underlyingToken)).symbol();
 
@@ -60,165 +66,54 @@ contract WrappedfCash is IWrappedfCash, ERC777Upgradeable, AllowfCashReceiver, R
             // no default operators
             new address[](0)
         );
+
+        // Set approvals for Notional. It is possible for an asset token address to equal the underlying
+        // token address when there is no money market involved.
+        assetToken.safeApprove(address(NotionalV2), type(uint256).max);
+        if (address(assetToken) != address(underlyingToken) && address(underlyingToken) != ETH_ADDRESS) {
+            underlyingToken.safeApprove(address(NotionalV2), type(uint256).max);
+        }
     }
 
     /***** Mint Methods *****/
 
-    /// @notice Lends the corresponding fCash amount to the current contract and credits the
-    /// receiver with the corresponding amount of fCash shares. Will transfer cash from the
-    /// msg.sender. Uses the underlying token.
+    /// @notice Lends cashAmount in return for fCashAmount. This is less efficient than doing
+    /// a batchLend and ERC1155 transfer directly from the sender but is here for convenience.
+    /// This method does not work with ETH, use cETH or aETH instead.
+    /// @param depositAmountExternal amount of cash to deposit into this method
     /// @param fCashAmount amount of fCash to purchase (lend)
     /// @param receiver address to receive the fCash shares
-    function mintFromUnderlying(
-        uint256 fCashAmount,
-        address receiver
-    ) external payable override {
-        (
-            uint8 marketIndex,
-            /* int256 assetCashInternal */,
-            int256 underlyingCashInternal
-        ) = _calculateMint(fCashAmount);
-        require(underlyingCashInternal < 0, "Trade error");
-        (IERC20 token, int256 underlyingPrecision) = getUnderlyingToken();
-
-        uint256 depositAmount = EncodeDecode.convertToExternalDepositAmount(
-            underlyingCashInternal.neg(),
-            underlyingPrecision
-        );
-
-        _executeLendTradeAndMint(
-            token,
-            depositAmount,
-            true,
-            marketIndex,
-            fCashAmount,
-            receiver
-        );
-    }
-
-    /// @notice Lends the corresponding fCash amount to the current contract and credits the
-    /// receiver with the corresponding amount of fCash shares. Will transfer cash from the
-    /// msg.sender. Uses the asset token (cToken).
-    /// @param fCashAmount amount of fCash to purchase (lend)
-    /// @param receiver address to receive the fCash shares
-    function mintFromAsset(
-        uint256 fCashAmount,
-        address receiver
-    ) external override {
-        (
-            uint8 marketIndex,
-            int256 assetCashInternal,
-            /* int256 underlyingCashInternal*/
-        ) = _calculateMint(fCashAmount);
-        require(assetCashInternal < 0, "Trade error");
-        (IERC20 token, int256 underlyingPrecision, /* */) = getAssetToken();
-
-        uint256 depositAmount = EncodeDecode.convertToExternalDepositAmount(
-            assetCashInternal.neg(),
-            underlyingPrecision
-        );
-
-        _executeLendTradeAndMint(
-            token,
-            depositAmount,
-            false,
-            marketIndex,
-            fCashAmount,
-            receiver
-        );
-    }
-
-    /// @notice Calculates the amount of asset cash or underlying cash required to lend
-    function _calculateMint(
-        uint256 fCashAmount
-    ) internal returns (
-        uint8 marketIndex, 
-        int256 assetCashInternal,
-        int256 underlyingCashInternal
-    ) {
-        require(!hasMatured(), "fCash matured");
-        (IERC20 assetToken, /* */, TokenType tokenType) = getAssetToken();
-        if (tokenType == TokenType.cToken || tokenType == TokenType.cETH) {
-            // Accrue interest on cTokens first so calculate trade returns the appropriate
-            // amount
-            ICToken(address(assetToken)).accrueInterest();
-        }
-
-        marketIndex = getMarketIndex();
-        (assetCashInternal, underlyingCashInternal) = NotionalV2.getCashAmountGivenfCashAmount(
-            getCurrencyId(),
-            int88(SafeInt256.toInt(fCashAmount)),
-            marketIndex,
-            block.timestamp
-        );
-
-        return (
-            marketIndex,
-            _adjustForRounding(assetCashInternal),
-            _adjustForRounding(underlyingCashInternal)
-        );
-    }
-
-    /// @dev adjust the returned cash values for potential rounding issues in calculations
-    function _adjustForRounding(int256 x) private pure returns (int256) {
-        int256 y = (x < 1e7) ? int256(1) : (x / 1e7);
-        return x - y;
-    }
-
-    /// @dev Executes a lend trade and mints fCash shares back to the lender
-    function _executeLendTradeAndMint(
-        IERC20 token,
+    /// @param minImpliedRate minimum annualized interest rate to lend at
+    /// @param useUnderlying set to true to use the underlying token
+    function mint(
         uint256 depositAmountExternal,
-        bool isUnderlying,
-        uint8 marketIndex,
-        uint256 _fCashAmount,
-        address receiver
-    ) internal nonReentrant {
-        require(_fCashAmount <= uint256(type(uint88).max));
-        uint88 fCashAmount = uint88(_fCashAmount);
+        uint88 fCashAmount,
+        address receiver,
+        uint32 minImpliedRate,
+        bool useUnderlying
+    ) external override nonReentrant {
+        require(!hasMatured(), "fCash matured");
+        (IERC20 token, /* bool isETH */) = _getToken(useUnderlying);
+        uint256 balanceBefore = token.balanceOf(address(this));
+        // Transfers tokens in for lending, Notional will transfer from this contract.
+        token.safeTransferFrom(msg.sender, address(this), depositAmountExternal);
 
-        uint256 balanceBefore;
-        uint256 ethValue;
-        if (address(token) == ETH_ADDRESS) {
-            // If ETH is specified, it is paid directly to the mintFromUnderlying method
-            // balanceBefore is the balance of the contract previous to the ETH sent via msg.value
-            balanceBefore = address(this).balance - msg.value;
-            require(msg.value >= depositAmountExternal, "Insufficient ETH");
-            // Only send the depositAmountExternal to Notional V2, we will refund excess at the end of
-            // this method
-            ethValue = depositAmountExternal;
-        } else {
-            balanceBefore = token.balanceOf(address(this));
-            token.safeTransferFrom(msg.sender, address(this), depositAmountExternal);
-            token.safeApprove(address(NotionalV2), depositAmountExternal);
-            // ETH should not be sent when transferring tokens
-            require(msg.value == 0, "Unexpected ETH");
-        }
-
-        BalanceActionWithTrades[] memory action = new BalanceActionWithTrades[](1);
-        action[0].actionType = isUnderlying ? DepositActionType.DepositUnderlying : DepositActionType.DepositAsset;
-        action[0].depositActionAmount = depositAmountExternal;
+        // Executes a lending action on Notional
+        BatchLend[] memory action = new BatchLend[](1);
         action[0].currencyId = getCurrencyId();
-        action[0].withdrawEntireCashBalance = true;
-        action[0].redeemToUnderlying = true;
+        action[0].depositUnderlying = useUnderlying;
         action[0].trades = new bytes32[](1);
-        action[0].trades[0] = EncodeDecode.encodeLendTrade(marketIndex, fCashAmount, 0);
+        action[0].trades[0] = EncodeDecode.encodeLendTrade(getMarketIndex(), fCashAmount, minImpliedRate);
+        NotionalV2.batchLend(address(this), action);
 
-        NotionalV2.batchBalanceAndTradeAction{value: ethValue}(address(this), action);
-
-        uint256 balanceAfter = address(token) == ETH_ADDRESS ? address(this).balance : token.balanceOf(address(this));
-
+        // Mints ERC20 tokens for the receiver
         _mint(receiver, fCashAmount, "", "", false);
 
         // Send any residuals from lending back to the sender
+        uint256 balanceAfter = token.balanceOf(address(this));
         uint256 residual = balanceAfter - balanceBefore;
         if (residual > 0) {
-            if (address(token) == ETH_ADDRESS) {
-                // NOTE: this is the last statement in the transaction so reentrancy risk is limited
-                payable(msg.sender).call{value: residual}("");
-            } else {
-                token.safeTransfer(msg.sender, residual);
-            }
+            token.safeTransfer(msg.sender, residual);
         }
     }
 
@@ -290,19 +185,21 @@ contract WrappedfCash is IWrappedfCash, ERC777Upgradeable, AllowfCashReceiver, R
         burn(amount, data);
     }
 
-    function redeemToAsset(uint256 amount, address receiver) external override {
+    function redeemToAsset(uint256 amount, address receiver, uint32 maxImpliedRate) external override {
         redeem(amount, RedeemOpts({
             redeemToUnderlying: false,
             transferfCash: false,
-            receiver: receiver
+            receiver: receiver,
+            maxImpliedRate: maxImpliedRate
         }));
     }
 
-    function redeemToUnderlying(uint256 amount, address receiver) external override {
+    function redeemToUnderlying(uint256 amount, address receiver, uint32 maxImpliedRate) external override {
         redeem(amount, RedeemOpts({
             redeemToUnderlying: true,
             transferfCash: false,
-            receiver: receiver
+            receiver: receiver,
+            maxImpliedRate: maxImpliedRate
         }));
     }
 
@@ -352,7 +249,7 @@ contract WrappedfCash is IWrappedfCash, ERC777Upgradeable, AllowfCashReceiver, R
                 userData
             );
         } else {
-            _sellfCash(opts.receiver, amount, opts.redeemToUnderlying);
+            _sellfCash(opts.receiver, amount, opts.redeemToUnderlying, opts.maxImpliedRate);
         }
     }
 
@@ -363,43 +260,26 @@ contract WrappedfCash is IWrappedfCash, ERC777Upgradeable, AllowfCashReceiver, R
         uint88 assetInternalCashClaim,
         bool toUnderlying
     ) private returns (uint256 tokensTransferred) {
-        IERC20 token;
+        (IERC20 token, bool isETH) = _getToken(toUnderlying);
 
-        if (toUnderlying) {
-            (token, /* */) = getUnderlyingToken();
-        } else {
-            (token, /* */, /* */) = getAssetToken();
-        }
-
-        bool isETH = address(token) == ETH_ADDRESS;
         uint256 balanceBefore = isETH ? address(this).balance : token.balanceOf(address(this));
         NotionalV2.withdraw(currencyId, assetInternalCashClaim, toUnderlying);
         uint256 balanceAfter = isETH ?  address(this).balance : token.balanceOf(address(this));
 
         tokensTransferred = balanceAfter - balanceBefore;
-        if (isETH) {
-            payable(receiver).call{value: tokensTransferred}("");
-        } else {
-            token.safeTransfer(receiver, tokensTransferred);
-        }
+        _sendTokensToReceiver(token, receiver, isETH, tokensTransferred);
     }
 
     /// @dev Sells an fCash share back on the Notional AMM
     function _sellfCash(
         address receiver,
         uint256 fCashToSell,
-        bool toUnderlying
+        bool toUnderlying,
+        uint32 maxImpliedRate
     ) private returns (uint256 tokensTransferred) {
-        uint8 marketIndex = getMarketIndex();
-        IERC20 token;
+        (IERC20 token, bool isETH) = _getToken(toUnderlying);
         require(fCashToSell <= uint256(type(uint88).max));
         uint88 fCashAmount = uint88(fCashToSell);
-
-        if (toUnderlying) {
-            (token, /* */) = getUnderlyingToken();
-        } else {
-            (token, /* */, /* */) = getAssetToken();
-        }
 
         BalanceActionWithTrades[] memory action = new BalanceActionWithTrades[](1);
         action[0].actionType = DepositActionType.None;
@@ -407,20 +287,38 @@ contract WrappedfCash is IWrappedfCash, ERC777Upgradeable, AllowfCashReceiver, R
         action[0].withdrawEntireCashBalance = true;
         action[0].redeemToUnderlying = toUnderlying;
         action[0].trades = new bytes32[](1);
-        action[0].trades[0] = EncodeDecode.encodeBorrowTrade(marketIndex, fCashAmount, 0);
+        action[0].trades[0] = EncodeDecode.encodeBorrowTrade(getMarketIndex(), fCashAmount, maxImpliedRate);
 
-        bool isETH = address(token) == ETH_ADDRESS;
         uint256 balanceBefore = isETH ? address(this).balance : token.balanceOf(address(this));
         NotionalV2.batchBalanceAndTradeAction(address(this), action);
         uint256 balanceAfter = isETH ?  address(this).balance : token.balanceOf(address(this));
 
-        // Send any residuals from lending back to the sender
+        // Send borrowed cash back to receiver
         tokensTransferred = balanceAfter - balanceBefore;
+        _sendTokensToReceiver(token, receiver, isETH, tokensTransferred);
+    }
+
+    function _sendTokensToReceiver(
+        IERC20 token,
+        address receiver,
+        bool isETH,
+        uint256 tokensTransferred
+    ) internal {
         if (isETH) {
-            payable(receiver).call{value: tokensTransferred}("");
+            (bool success, /* */) = payable(receiver).call{value: tokensTransferred}("");
+            require(success);
         } else {
             token.safeTransfer(receiver, tokensTransferred);
         }
+    }
+
+    function _getToken(bool useUnderlying) internal returns (IERC20 token, bool isETH) {
+        if (useUnderlying) {
+            (token, /* */) = getUnderlyingToken();
+        } else {
+            (token, /* */, /* */) = getAssetToken();
+        }
+        isETH = address(token) == ETH_ADDRESS;
     }
 
     /***** View Methods  *****/

@@ -81,6 +81,15 @@ struct BalanceAction {
     bool redeemToUnderlying;
 }
 
+/// @notice Defines a batch lending action
+struct BatchLend {
+    uint16 currencyId;
+    // True if the contract should try to transfer underlying tokens instead of asset tokens
+    bool depositUnderlying;
+    // Array of tightly packed 32 byte objects that represent trades. See TradeActionType documentation
+    bytes32[] trades;
+}
+
 /// @notice Defines a balance action with a set of trades to do as well
 struct BalanceActionWithTrades {
     DepositActionType actionType;

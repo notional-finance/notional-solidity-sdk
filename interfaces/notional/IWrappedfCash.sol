@@ -10,15 +10,23 @@ interface IWrappedfCash {
         bool redeemToUnderlying;
         bool transferfCash;
         address receiver;
+        // Zero signifies no maximum slippage
+        uint32 maxImpliedRate;
     }
     function initialize(uint16 currencyId, uint40 maturity) external;
 
-    function mintFromUnderlying(uint256 fCashAmount, address receiver) external payable;
-    function mintFromAsset(uint256 fCashAmount, address receiver) external;
+    /// @notice Mints wrapped fCash ERC20 tokens
+    function mint(
+        uint256 depositAmountExternal,
+        uint88 fCashAmount,
+        address receiver,
+        uint32 minImpliedRate,
+        bool useUnderlying
+    ) external;
 
     function redeem(uint256 amount, RedeemOpts memory data) external;
-    function redeemToAsset(uint256 amount, address receiver) external;
-    function redeemToUnderlying(uint256 amount, address receiver) external;
+    function redeemToAsset(uint256 amount, address receiver, uint32 maxImpliedRate) external;
+    function redeemToUnderlying(uint256 amount, address receiver, uint32 maxImpliedRate) external;
 
     /// @notice Returns the underlying fCash ID of the token
     function getfCashId() external view returns (uint256);
