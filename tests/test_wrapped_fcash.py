@@ -99,6 +99,7 @@ def test_deploy_wrapped_fcash(factory, env):
     assert wrapper.name() == "Wrapped fDAI @ {}".format(markets[0][1])
     assert wrapper.symbol() == "wfDAI:{}".format(markets[0][1])
 
+@pytest.mark.todo
 def test_upgrade_wrapped_fcash(factory, env):
     pass
 
@@ -436,41 +437,6 @@ def test_mint_and_redeem_fcash_via_asset(wrapper, env, accounts):
     assert wrapper.balanceOf(acct.address) == 0
     assert env.tokens["cDAI"].balanceOf(wrapper.address) == 0
     assert env.tokens["DAI"].balanceOf(wrapper.address) == 0
-
-# TODO: consider changing this to use WETH?
-# def test_mint_and_redeem_feth_via_ceth(factory, env):
-#     markets = env.notional.getActiveMarkets(1)
-#     txn = factory.deployWrapper(1, markets[0][1])
-#     wrapper = Contract.from_abi("Wrapper", txn.events['WrapperDeployed']['wrapper'], WrappedfCash.abi)
-
-#     wrapper.mint(
-#         10e8,
-#         env.whales["ETH_EOA"].address,
-#         {'from': env.whales["ETH_EOA"].address, "value": 10e18}
-#     )
-
-#     assert wrapper.balanceOf(env.whales["ETH_EOA"].address) == 10e8
-#     assert wrapper.balance() == 0
-#     portfolio = env.notional.getAccount(wrapper.address)[2]
-#     assert portfolio[0][0] == wrapper.getCurrencyId()
-#     assert portfolio[0][1] == wrapper.getMaturity()
-#     assert portfolio[0][3] == 10e8
-#     assert len(portfolio) == 1
-
-#     # Now redeem the fCash
-#     balanceBefore = env.whales["ETH_EOA"].balance()
-#     wrapper.redeemToUnderlying(
-#         10e8,
-#         env.whales["ETH_EOA"].address,
-#         {"from": env.whales["ETH_EOA"].address}
-#     )
-#     balanceAfter = env.whales["ETH_EOA"].balance()
-#     balanceChange = balanceAfter - balanceBefore 
-
-#     assert 9.90e18 <= balanceChange and balanceChange <= 9.99e18
-#     portfolio = env.notional.getAccount(wrapper.address)[2]
-#     assert len(portfolio) == 0
-#     assert wrapper.balanceOf(env.whales["ETH_EOA"].address) == 0
 
 def test_lend_via_erc1155_action_asset_token(wrapper, env, accounts):
     acct = accounts[0]
