@@ -87,7 +87,8 @@ def exchangeAdapter(WrappedfCashTradeAdapter, env):
 def test_asset_cash_to_fcash(wrapper3Month, wrapper6Month, setToken, exchangeAdapter, env):
     cTokenBefore = env.tokens['cDAI'].balanceOf(setToken.address)
     fCashBalanceBefore = wrapper3Month.balanceOf(setToken.address)
-    setToken.executeTrade(
+    # Gas Used: 334619
+    txn = setToken.executeTrade(
         (
             setToken.address,
             exchangeAdapter.address,
@@ -100,6 +101,7 @@ def test_asset_cash_to_fcash(wrapper3Month, wrapper6Month, setToken, exchangeAda
         eth_abi.encode_abi(['uint8', 'uint32'], [0, 0]),
         {'from': env.deployer}
     )
+
     cTokenAfter = env.tokens['cDAI'].balanceOf(setToken.address)
     fCashBalanceAfter = wrapper3Month.balanceOf(setToken.address)
 
@@ -109,11 +111,13 @@ def test_asset_cash_to_fcash(wrapper3Month, wrapper6Month, setToken, exchangeAda
 
     assert fCashBalanceAfter - fCashBalanceBefore == 100_000e8
     assert cTokenBefore - cTokenAfter <= 5_000_000e8
+    assert txn.gas_used <= 350000
 
 def test_fcash_to_asset_cash(wrapper3Month, wrapper6Month, setToken, exchangeAdapter, env):
     cTokenBefore = env.tokens['cDAI'].balanceOf(setToken.address)
     fCashBalanceBefore = wrapper3Month.balanceOf(setToken.address)
-    setToken.executeTrade(
+    # Gas Used: 251135
+    txn = setToken.executeTrade(
         (
             setToken.address,
             exchangeAdapter.address,
@@ -126,6 +130,7 @@ def test_fcash_to_asset_cash(wrapper3Month, wrapper6Month, setToken, exchangeAda
         eth_abi.encode_abi(['uint8', 'uint32'], [1, Wei(0.12e9)]),
         {'from': env.deployer}
     )
+
     cTokenAfter = env.tokens['cDAI'].balanceOf(setToken.address)
     fCashBalanceAfter = wrapper3Month.balanceOf(setToken.address)
 
@@ -135,13 +140,14 @@ def test_fcash_to_asset_cash(wrapper3Month, wrapper6Month, setToken, exchangeAda
 
     assert fCashBalanceAfter - fCashBalanceBefore == -100_000e8
     assert cTokenAfter - cTokenBefore >= 4_800_000e8
+    assert txn.gas_used <= 275000
 
-@pytest.mark.only
 def test_fcash_to_fcash(wrapper3Month, wrapper6Month, setToken, exchangeAdapter, env):
     cTokenBefore = env.tokens['cDAI'].balanceOf(setToken.address)
     fCash3MonthBalanceBefore = wrapper3Month.balanceOf(setToken.address)
     fCash6MonthBalanceBefore = wrapper6Month.balanceOf(setToken.address)
-    setToken.executeTrade(
+    # gas used: 509711
+    txn = setToken.executeTrade(
         (
             setToken.address,
             exchangeAdapter.address,
@@ -165,3 +171,4 @@ def test_fcash_to_fcash(wrapper3Month, wrapper6Month, setToken, exchangeAdapter,
     assert fCash3MonthBalanceAfter - fCash3MonthBalanceBefore == -100_000e8
     assert fCash6MonthBalanceAfter - fCash6MonthBalanceBefore == 95_000e8
     assert cTokenAfter - cTokenBefore >= 100_000e8
+    assert txn.gas_used <= 525000

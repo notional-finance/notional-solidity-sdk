@@ -84,7 +84,6 @@ contract WrappedfCashTradeAdapter is IExchangeAdapter {
         uint256 fCashAmount,
         address receiver
     ) external {
-        // TODO: this can be an erc1155 transfer maybe to save some gas
         assetToken.transferFrom(msg.sender, address(this), assetCashAmount);
         assetToken.approve(address(mintWrapper), assetCashAmount);
         mintWrapper.mint(assetCashAmount, safeUint88(fCashAmount), receiver, 0, false);
