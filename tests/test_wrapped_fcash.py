@@ -301,7 +301,7 @@ def test_mint_failure_slippage(wrapper, lender, env):
             10_000e18,
             10_000e8,
             env.whales["DAI_EOA"].address,
-            0.1e9,
+            0.2e9,
             True,
             {'from': env.whales["DAI_EOA"].address}
         )
@@ -328,6 +328,8 @@ def test_mint_and_redeem_fcash_via_underlying(wrapper, env):
         True,
         {'from': env.whales["DAI_EOA"].address}
     )
+    assert env.tokens["cDAI"].balanceOf(wrapper.address) == 0
+    assert env.tokens["DAI"].balanceOf(wrapper.address) == 0
 
     assert wrapper.balanceOf(env.whales["DAI_EOA"].address) == 10_000e8
     portfolio = env.notional.getAccount(wrapper.address)[2]
@@ -352,6 +354,9 @@ def test_mint_and_redeem_fcash_via_underlying(wrapper, env):
     assert len(portfolio) == 0
     assert wrapper.balanceOf(env.whales["DAI_EOA"].address) == 0
 
+    assert env.tokens["cDAI"].balanceOf(wrapper.address) == 0
+    assert env.tokens["DAI"].balanceOf(wrapper.address) == 0
+
 def test_mint_and_redeem_fusdc_via_underlying(factory, env):
     markets = env.notional.getActiveMarkets(2)
     txn = factory.deployWrapper(3, markets[0][1])
@@ -366,6 +371,8 @@ def test_mint_and_redeem_fusdc_via_underlying(factory, env):
         True,
         {'from': env.whales["USDC"].address}
     )
+    assert env.tokens["cUSDC"].balanceOf(wrapper.address) == 0
+    assert env.tokens["USDC"].balanceOf(wrapper.address) == 0
 
     assert wrapper.balanceOf(env.whales["USDC"].address) == 10_000e8
     portfolio = env.notional.getAccount(wrapper.address)[2]
@@ -389,19 +396,28 @@ def test_mint_and_redeem_fusdc_via_underlying(factory, env):
     portfolio = env.notional.getAccount(wrapper.address)[2]
     assert len(portfolio) == 0
     assert wrapper.balanceOf(env.whales["USDC"].address) == 0
+    assert env.tokens["cUSDC"].balanceOf(wrapper.address) == 0
+    assert env.tokens["USDC"].balanceOf(wrapper.address) == 0
 
-def test_mint_and_redeem_fcash_via_asset(wrapper, env):
-    env.tokens["cDAI"].approve(wrapper.address, 2 ** 255 - 1, {'from': env.whales["cDAI"].address})
+def test_mint_and_redeem_fcash_via_asset(wrapper, env, accounts):
+    acct = accounts[0]
+    env.tokens["DAI"].transfer(acct, 100_000e18, {'from': env.whales["DAI_EOA"]})
+    env.tokens["DAI"].approve(env.tokens["cDAI"].address, 2 ** 255 - 1, {'from': acct})
+    env.tokens["cDAI"].mint(100_000e18, {'from': acct})
+    env.tokens["cDAI"].approve(wrapper.address, 2**255-1, {'from': acct})
+
     wrapper.mint(
-        50_000e8,
+        500_000e8,
         10_000e8,
-        env.whales["cDAI"].address,
+        acct.address,
         False,
         0,
-        {'from': env.whales["cDAI"].address}
+        {'from': acct}
     )
+    assert env.tokens["cDAI"].balanceOf(wrapper.address) == 0
+    assert env.tokens["DAI"].balanceOf(wrapper.address) == 0
 
-    assert wrapper.balanceOf(env.whales["cDAI"].address) == 10_000e8
+    assert wrapper.balanceOf(acct.address) == 10_000e8
     portfolio = env.notional.getAccount(wrapper.address)[2]
     assert portfolio[0][0] == wrapper.getCurrencyId()
     assert portfolio[0][1] == wrapper.getMaturity()
@@ -409,20 +425,17 @@ def test_mint_and_redeem_fcash_via_asset(wrapper, env):
     assert len(portfolio) == 1
 
     # Now redeem the fCash
-    balanceBefore = env.tokens["cDAI"].balanceOf(env.whales["cDAI"].address)
-    wrapper.redeemToAsset(
-        10_000e8,
-        env.whales["cDAI"].address,
-        0,
-        {"from": env.whales["cDAI"].address}
-    )
-    balanceAfter = env.tokens["cDAI"].balanceOf(env.whales["cDAI"].address)
+    balanceBefore = env.tokens["cDAI"].balanceOf(acct.address)
+    wrapper.redeemToAsset(10_000e8, acct.address, 0, {"from": acct.address})
+    balanceAfter = env.tokens["cDAI"].balanceOf(acct.address)
     balanceChange = balanceAfter - balanceBefore 
 
-    assert 440_000e8 <= balanceChange and balanceChange <= 450_000e8
+    assert 440_000e8 <= balanceChange and balanceChange <= 490_000e8
     portfolio = env.notional.getAccount(wrapper.address)[2]
     assert len(portfolio) == 0
-    assert wrapper.balanceOf(env.whales["cDAI"].address) == 0
+    assert wrapper.balanceOf(acct.address) == 0
+    assert env.tokens["cDAI"].balanceOf(wrapper.address) == 0
+    assert env.tokens["DAI"].balanceOf(wrapper.address) == 0
 
 # TODO: consider changing this to use WETH?
 # def test_mint_and_redeem_feth_via_ceth(factory, env):
@@ -459,14 +472,10 @@ def test_mint_and_redeem_fcash_via_asset(wrapper, env):
 #     assert len(portfolio) == 0
 #     assert wrapper.balanceOf(env.whales["ETH_EOA"].address) == 0
 
-@pytest.mark.only
-def test_lend_via_erc1155_action(wrapper, env, accounts):
+def test_lend_via_erc1155_action_asset_token(wrapper, env, accounts):
     acct = accounts[0]
     env.tokens["DAI"].transfer(acct, 100_000e18, {'from': env.whales["DAI_EOA"]})
-
-    env.tokens["DAI"].approve(env.notional.address, 2 ** 255 - 1, {'from': acct})
     env.tokens["DAI"].approve(env.tokens["cDAI"].address, 2 ** 255 - 1, {'from': acct})
-
     env.tokens["cDAI"].mint(100_000e18, {'from': acct})
     env.tokens["cDAI"].approve(env.notional.address, 2**255-1, {'from': acct})
 
@@ -488,8 +497,39 @@ def test_lend_via_erc1155_action(wrapper, env, accounts):
         lendCallData,
         {"from": acct}
     )
-    # 488800261188499
-    assert False
+
+    assert env.tokens["cDAI"].balanceOf(wrapper.address) == 0
+    assert env.tokens["DAI"].balanceOf(wrapper.address) == 0
+
+    # test balance on wrapper and in notional fCash
+    assert wrapper.balanceOf(acct.address) == 100_000e8
+    # assert that the account has no Notional position
+    portfolio = env.notional.getAccount(acct.address)[2]
+    assert len(portfolio) == 0
+
+def test_lend_via_erc1155_action_underlying_token(wrapper, env, accounts):
+    acct = accounts[0]
+    env.tokens["DAI"].transfer(acct, 100_000e18, {'from': env.whales["DAI_EOA"]})
+    env.tokens["DAI"].approve(env.notional.address, 2 ** 255 - 1, {'from': acct})
+
+    # Requires approval on the Notional side...
+    action = get_lend_action(
+        2,
+        [{"tradeActionType": "Lend", "marketIndex": wrapper.getMarketIndex(),
+            "notional": 100_000e8, "minSlippage": 0}],
+        True,
+    )
+    lendCallData = env.notional.batchLend.encode_input(acct.address, [action])
+
+    # will msg.sender will lend directly on notional, via erc1155 transfer
+    env.notional.safeTransferFrom(
+        acct.address, # msg.sender
+        wrapper.address, # wrapper will receive fCash
+        wrapper.getfCashId(),
+        100_000e8,
+        lendCallData,
+        {"from": acct}
+    )
 
     assert env.tokens["cDAI"].balanceOf(wrapper.address) == 0
     assert env.tokens["DAI"].balanceOf(wrapper.address) == 0
