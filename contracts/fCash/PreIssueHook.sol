@@ -78,7 +78,8 @@ contract NotionalIssuanceHook is IManagerIssuanceHook {
                 IERC777(address(wrapper)).operatorBurn(
                     address(_setToken),
                     totalBalance,
-                    abi.encode(IWrappedfCash.RedeemOpts(false, false, address(this))),
+                    // TODO: Check if using max uint32 for maxImpliedRate makes sense
+                    abi.encode(IWrappedfCash.RedeemOpts(false, false, address(this), type(uint32).max)),
                     ""
                 );
 
