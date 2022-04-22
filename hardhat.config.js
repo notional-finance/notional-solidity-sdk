@@ -5,36 +5,49 @@ const NETWORKS_MAINNET_URL = process.env.NETWORKS_MAINNET_URL;
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
 
 module.exports = {
-  defaultNetwork: "hardhat",
-  networks: {
-    mainnet: {
-      url:  NETWORKS_MAINNET_URL
+    defaultNetwork: "hardhat",
+    networks: {
+        mainnet: {
+            url: NETWORKS_MAINNET_URL,
+        },
+        hardhat: {
+            hardfork: "london",
+            initialBaseFeePerGas: 0,
+            throwOnTransactionFailures: true,
+            throwOnCallFailures: true,
+        },
     },
-    hardhat: {
-      hardfork: "london",
-      initialBaseFeePerGas: 0,
-      throwOnTransactionFailures: true,
-      throwOnCallFailures: true,
+    solidity: {
+        compilers: [
+            {
+                version: "0.7.6",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 200,
+                    },
+                },
+            },
+            {
+                version: "0.8.11",
+                settings: {
+                    optimizer: {
+                        enabled: true,
+                        runs: 200,
+                    },
+                },
+            },
+        ],
     },
-  },
-  solidity: {
-    version: "0.7.6",
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 200
-      }
-    }
-  },
-  paths: {
-    sources: "./contracts",
-    tests: "./test",
-    cache: "./cache",
-    artifacts: "./artifacts"
-  },
-  etherscan: {
-    // Your API key for Etherscan
-    // Obtain one at https://etherscan.io/
-    apiKey: ETHERSCAN_API_KEY
-  }
-}
+    paths: {
+        sources: "./contracts",
+        tests: "./test",
+        cache: "./cache",
+        artifacts: "./artifacts",
+    },
+    etherscan: {
+        // Your API key for Etherscan
+        // Obtain one at https://etherscan.io/
+        apiKey: ETHERSCAN_API_KEY,
+    },
+};
