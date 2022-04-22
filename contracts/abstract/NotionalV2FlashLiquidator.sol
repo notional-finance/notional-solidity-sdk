@@ -5,12 +5,12 @@ pragma abicoder v2;
 import "./NotionalV2BaseLiquidator.sol";
 import "../lib/SafeInt256.sol";
 import "../lib/SafeToken.sol";
-import "interfaces/aave/IFlashLoanReceiver.sol";
-import "interfaces/aave/IFlashLender.sol";
-import "interfaces/notional/NotionalProxy.sol";
-import "interfaces/compound/ICToken.sol";
-import "interfaces/compound/ICErc20.sol";
-import "interfaces/compound/ICEther.sol";
+import "../../interfaces/aave/IFlashLoanReceiver.sol";
+import "../../interfaces/aave/IFlashLender.sol";
+import "../../interfaces/notional/NotionalProxy.sol";
+import "../../interfaces/compound/ICToken.sol";
+import "../../interfaces/compound/ICErc20.sol";
+import "../../interfaces/compound/ICEther.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "interfaces/notional/NotionalProxy.sol";
-import "interfaces/compound/ICEther.sol";
-import "interfaces/WETH9.sol";
+import "../../interfaces/notional/NotionalProxy.sol";
+import "../../interfaces/compound/ICEther.sol";
+import "../../interfaces/WETH9.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 library MainnetAddresses {

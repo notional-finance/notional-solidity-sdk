@@ -3,9 +3,9 @@ pragma solidity ^0.8.0;
 
 import "../lib/DateTime.sol";
 import "./WrappedfCashFactory.sol";
-import {IWrappedfCash} from "interfaces/notional/IWrappedfCash.sol";
+import {IWrappedfCash} from "../../interfaces/notional/IWrappedfCash.sol";
 import "@openzeppelin/contracts/token/ERC777/IERC777.sol";
-import "interfaces/set-protocol/ISetToken.sol";
+import "../../interfaces/set-protocol/ISetToken.sol";
 
 interface IManagerIssuanceHook {
     function invokePreIssueHook(ISetToken _setToken, uint256 _issueQuantity, address _sender, address _to) external;

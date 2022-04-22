@@ -2,10 +2,10 @@
 pragma solidity ^0.8.0;
 pragma abicoder v2;
 
-import "interfaces/notional/NotionalProxy.sol";
-import "interfaces/compound/ICToken.sol";
-import "interfaces/compound/ICErc20.sol";
-import "interfaces/compound/ICEther.sol";
+import "../../interfaces/notional/NotionalProxy.sol";
+import "../../interfaces/compound/ICToken.sol";
+import "../../interfaces/compound/ICErc20.sol";
+import "../../interfaces/compound/ICEther.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 

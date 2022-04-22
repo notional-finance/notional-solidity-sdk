@@ -2,10 +2,10 @@
 pragma solidity >0.7.0;
 
 import "./Constants.sol";
-import "interfaces/compound/ICErc20.sol";
-import "interfaces/compound/ICEther.sol";
-import "interfaces/WETH9.sol";
-import "interfaces/IEIP20NonStandard.sol";
+import "../../interfaces/compound/ICErc20.sol";
+import "../../interfaces/compound/ICEther.sol";
+import "../../interfaces/WETH9.sol";
+import "../../interfaces/IEIP20NonStandard.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 

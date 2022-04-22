@@ -4,9 +4,9 @@ pragma abicoder v2;
 
 import "../lib/Types.sol";
 import "../lib/Addresses.sol";
-import "interfaces/notional/NotionalProxy.sol";
-import "interfaces/notional/NotionalCallback.sol";
-import "interfaces/WETH9.sol";
+import "../../interfaces/notional/NotionalProxy.sol";
+import "../../interfaces/notional/NotionalCallback.sol";
+import "../../interfaces/WETH9.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IEscrow {

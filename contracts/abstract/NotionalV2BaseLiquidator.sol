@@ -2,11 +2,11 @@
 pragma solidity >0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "interfaces/compound/IErc20.sol";
-import "interfaces/notional/NotionalProxy.sol";
-import "interfaces/compound/ICErc20.sol";
-import "interfaces/compound/ICEther.sol";
-import "interfaces/WETH9.sol";
+import "../../interfaces/compound/IErc20.sol";
+import "../../interfaces/notional/NotionalProxy.sol";
+import "../../interfaces/compound/ICErc20.sol";
+import "../../interfaces/compound/ICEther.sol";
+import "../../interfaces/WETH9.sol";
 import "../lib/Addresses.sol";
 import "../lib/DateTime.sol";
 import "../lib/SafeInt256.sol";
