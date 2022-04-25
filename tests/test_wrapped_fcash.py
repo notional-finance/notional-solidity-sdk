@@ -2,7 +2,7 @@ import pytest
 import brownie
 import eth_abi
 from tests.helpers import get_balance_trade_action
-from brownie import Contract, WrappedfCash, network
+from brownie import Contract, WrappedfCash, nProxyAdmin, network
 from brownie.convert.datatypes import Wei
 from brownie.network import Chain
 from scripts.EnvironmentConfig import getEnvironment
@@ -39,10 +39,13 @@ def wrapper(factory, env):
     return Contract.from_abi("Wrapper", txn.events['WrapperDeployed']['wrapper'], WrappedfCash.abi)
 
 @pytest.fixture() 
-def lender(env):
-    env.tokens["DAI"].approve(env.notional.address, 2**255-1, {'from': env.whales["DAI_EOA"]})
+def lender(env, accounts):
+    acct = accounts[4]
+    env.tokens["DAI"].transfer(acct, 1_000_000e18, {'from': env.whales["DAI_EOA"]})
+    
+    env.tokens["DAI"].approve(env.notional.address, 2**255-1, {'from': acct})
     env.notional.batchBalanceAndTradeAction(
-        env.whales["DAI_EOA"],
+        acct,
         [ 
             get_balance_trade_action(
                 2,
@@ -57,10 +60,10 @@ def lender(env):
                 withdrawEntireCashBalance=True,
                 redeemToUnderlying=True,
             )
-        ], { "from": env.whales["DAI_EOA"] }
+        ], { "from": acct }
     )
 
-    return env.whales["DAI_EOA"]
+    return acct
 
 @pytest.fixture() 
 def lender_contract(env):
@@ -99,9 +102,15 @@ def test_deploy_wrapped_fcash(factory, env):
     assert wrapper.name() == "Wrapped fDAI @ {}".format(markets[0][1])
     assert wrapper.symbol() == "wfDAI:{}".format(markets[0][1])
 
-@pytest.mark.todo
-def test_upgrade_wrapped_fcash(factory, env):
-    pass
+def test_upgrade_wrapped_fcash(factory, beacon, wrapper, env):
+    assert wrapper.getCurrencyId() == 2
+
+    emptyImpl = nProxyAdmin.deploy({"from": env.deployer})
+    beacon.upgradeTo(emptyImpl.address, {"from": env.deployer})
+
+    with brownie.reverts():
+        wrapper.getCurrencyId()
+
 
 def test_cannot_deploy_wrapper_twice(factory, env):
     markets = env.notional.getActiveMarkets(2)
@@ -296,43 +305,43 @@ def test_redeem_failure_slippage(wrapper, lender, env):
 
 # Test Direct fCash Trading
 def test_mint_failure_slippage(wrapper, lender, env):
-    env.tokens["DAI"].approve(wrapper.address, 2 ** 255 - 1, {'from': env.whales["DAI_EOA"].address})
+    env.tokens["DAI"].approve(wrapper.address, 2 ** 255 - 1, {'from': lender})
     with brownie.reverts():
         wrapper.mint(
             10_000e18,
             10_000e8,
-            env.whales["DAI_EOA"].address,
+            lender.address,
             0.2e9,
             True,
-            {'from': env.whales["DAI_EOA"].address}
+            {'from': lender}
         )
 
     wrapper.mint(
         10_000e18,
         10_000e8,
-        env.whales["DAI_EOA"].address,
+        lender.address,
         0.01e9,
         True,
-        {'from': env.whales["DAI_EOA"].address}
+        {'from': lender}
     )
 
-    assert wrapper.balanceOf(env.whales["DAI_EOA"].address) == 10_000e8
+    assert wrapper.balanceOf(lender.address) == 10_000e8
 
 
-def test_mint_and_redeem_fcash_via_underlying(wrapper, env):
-    env.tokens["DAI"].approve(wrapper.address, 2 ** 255 - 1, {'from': env.whales["DAI_EOA"].address})
+def test_mint_and_redeem_fcash_via_underlying(wrapper, lender, env):
+    env.tokens["DAI"].approve(wrapper.address, 2 ** 255 - 1, {'from': lender.address})
     wrapper.mint(
         10_000e18,
         10_000e8,
-        env.whales["DAI_EOA"].address,
+        lender.address,
         0,
         True,
-        {'from': env.whales["DAI_EOA"].address}
+        {'from': lender.address}
     )
     assert env.tokens["cDAI"].balanceOf(wrapper.address) == 0
     assert env.tokens["DAI"].balanceOf(wrapper.address) == 0
 
-    assert wrapper.balanceOf(env.whales["DAI_EOA"].address) == 10_000e8
+    assert wrapper.balanceOf(lender.address) == 10_000e8
     portfolio = env.notional.getAccount(wrapper.address)[2]
     assert portfolio[0][0] == wrapper.getCurrencyId()
     assert portfolio[0][1] == wrapper.getMaturity()
@@ -340,20 +349,20 @@ def test_mint_and_redeem_fcash_via_underlying(wrapper, env):
     assert len(portfolio) == 1
 
     # Now redeem the fCash
-    balanceBefore = env.tokens["DAI"].balanceOf(env.whales["DAI_EOA"].address)
+    balanceBefore = env.tokens["DAI"].balanceOf(lender.address)
     wrapper.redeemToUnderlying(
         10_000e8,
-        env.whales["DAI_EOA"].address,
+        lender.address,
         0,
-        {"from": env.whales["DAI_EOA"].address}
+        {"from": lender.address}
     )
-    balanceAfter = env.tokens["DAI"].balanceOf(env.whales["DAI_EOA"].address)
+    balanceAfter = env.tokens["DAI"].balanceOf(lender.address)
     balanceChange = balanceAfter - balanceBefore 
 
-    assert 9700e18 <= balanceChange and balanceChange <= 9900e18
+    assert 9700e18 <= balanceChange and balanceChange <= 9990e18
     portfolio = env.notional.getAccount(wrapper.address)[2]
     assert len(portfolio) == 0
-    assert wrapper.balanceOf(env.whales["DAI_EOA"].address) == 0
+    assert wrapper.balanceOf(lender.address) == 0
 
     assert env.tokens["cDAI"].balanceOf(wrapper.address) == 0
     assert env.tokens["DAI"].balanceOf(wrapper.address) == 0
@@ -431,7 +440,7 @@ def test_mint_and_redeem_fcash_via_asset(wrapper, env, accounts):
     balanceAfter = env.tokens["cDAI"].balanceOf(acct.address)
     balanceChange = balanceAfter - balanceBefore 
 
-    assert 440_000e8 <= balanceChange and balanceChange <= 490_000e8
+    assert 440_000e8 <= balanceChange and balanceChange <= 499_000e8
     portfolio = env.notional.getAccount(wrapper.address)[2]
     assert len(portfolio) == 0
     assert wrapper.balanceOf(acct.address) == 0

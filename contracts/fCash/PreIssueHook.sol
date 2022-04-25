@@ -78,7 +78,9 @@ contract NotionalIssuanceHook is IManagerIssuanceHook {
                 IERC777(address(wrapper)).operatorBurn(
                     address(_setToken),
                     totalBalance,
-                    abi.encode(IWrappedfCash.RedeemOpts(false, false, address(this))),
+                    // There is no need to supply a slippage limit here, we are not trading out
+                    // of the fCash position. The setToken will receive what is required.
+                    abi.encode(IWrappedfCash.RedeemOpts(false, false, address(_setToken), 0)),
                     ""
                 );
 
@@ -101,10 +103,10 @@ contract NotionalIssuanceHook is IManagerIssuanceHook {
             // Solidity 0.8 does a conversion check here
             uint40 maturity = uint40(tRef + DateTime.getTradedMarket(i));
 
-            // Check if the wrapper has already been deployed, else deploy it
-            address wrapper = FACTORY.computeAddress(CURRENCY_ID, maturity);
+            // The factory will not deploy a duplicate wrapper, will just return
+            // the corresponding address.
+            address wrapper = FACTORY.deployWrapper(CURRENCY_ID, maturity);
             if (!Address.isContract(wrapper)) {
-                wrapper = FACTORY.deployWrapper(CURRENCY_ID, maturity);
             }
 
             _setToken.addComponent(address(wrapper));

@@ -414,3 +414,27 @@ contract WrappedfCash is IWrappedfCash, ERC777Upgradeable, AllowfCashReceiver, R
     }
 
 }
+
+
+/*
+function asset() external view { getAssetToken() }
+function totalAssets() external view { getfCashPresentValue }
+function convertToAssets() external view { getfCashGivenCashAmount }
+function convertToShares() external view { getCashAmountGivenfCashAmount }
+
+function maxDeposit() external view returns { uint256.max}
+function previewDeposit() external view returns { uint256.max}
+function deposit(uint256 cTokens, address receiver) external view returns { uint256.max}
+
+function maxMint() external view returns { uint256.max}
+function previewMint() external view returns { uint256.max}
+function mint(uint256 fCash, address receiver) external view returns { uint256.max}
+
+function maxWithdraw() external view returns { uint256.max}
+function previewWithdraw() external view returns { uint256.max}
+function withdraw(uint256 cTokens, address receiver) external view returns { uint256.max}
+
+function maxRedeem() external view returns { uint256.max}
+function previewRedeem() external view returns { uint256.max}
+function redeem(uint256 fCash, address receiver) external view returns { uint256.max}
+*/
