@@ -17,6 +17,19 @@ library EncodeDecode {
         return amount.mul(decimals).div(Constants.INTERNAL_TOKEN_PRECISION);
     }
 
+    function convertToExternalDepositAmount(
+        int256 amount,
+        int256 decimals
+    ) internal pure returns (uint256) {
+        if (decimals == Constants.INTERNAL_TOKEN_PRECISION) return amount.toUint();
+        int256 val = amount.mul(decimals).div(Constants.INTERNAL_TOKEN_PRECISION);
+        
+        // Handles rounding errors for smaller token precisions
+        if (decimals < Constants.INTERNAL_TOKEN_PRECISION) val += 1;
+
+        return val.toUint();
+    }
+
     function convertToInternal(
         int256 amount,
         int256 decimals
@@ -30,9 +43,9 @@ library EncodeDecode {
         internal
         pure
         returns (
-            uint256 currencyId,
-            uint256 maturity,
-            uint256 assetType
+            uint16 currencyId,
+            uint40 maturity,
+            uint8 assetType
         )
     {
         assetType = uint8(id);
@@ -65,12 +78,10 @@ library EncodeDecode {
     ) internal pure returns (bytes32) {
         return
             bytes32(
-                uint256(
-                    (uint8(TradeActionType.Lend) << 248) |
-                        (marketIndex << 240) |
-                        (fCashAmount << 152) |
-                        (minImpliedRate << 120)
-                )
+                (uint256(uint8(TradeActionType.Lend)) << 248) |
+                (uint256(marketIndex) << 240) |
+                (uint256(fCashAmount) << 152) |
+                (uint256(minImpliedRate) << 120)
             );
     }
 
@@ -82,10 +93,10 @@ library EncodeDecode {
         return
             bytes32(
                 uint256(
-                    (uint8(TradeActionType.Borrow) << 248) |
-                        (marketIndex << 240) |
-                        (fCashAmount << 152) |
-                        (maxImpliedRate << 120)
+                    (uint256(uint8(TradeActionType.Borrow)) << 248) |
+                    (uint256(marketIndex) << 240) |
+                    (uint256(fCashAmount) << 152) |
+                    (uint256(maxImpliedRate) << 120)
                 )
             );
     }
@@ -135,7 +146,7 @@ library EncodeDecode {
                 uint256(
                     (uint8(TradeActionType.PurchaseNTokenResidual) << 248) |
                         (maturity << 216) |
-                        (uint256(fCashResidualAmount) << 128)
+                        (uint256(int256(fCashResidualAmount)) << 128)
                 )
             );
     }
@@ -148,8 +159,8 @@ library EncodeDecode {
             bytes32(
                 uint256(
                     (uint8(TradeActionType.SettleCashDebt) << 248) |
-                        (uint256(counterparty) << 88) |
-                        (uint256(fCashAmountToSettle))
+                        (uint256(bytes32(bytes20(counterparty))) << 88) |
+                        (uint256(int256(fCashAmountToSettle)))
                 )
             );
     }
@@ -170,9 +181,9 @@ library EncodeDecode {
 
         require(type(int88).min < notional && notional < type(int88).max);
         if (notional > 0) {
-            return (encodeBorrowTrade(uint8(marketIndex), uint88(notional.abs()), 0), true);
+            return (encodeBorrowTrade(uint8(marketIndex), uint88(int88(notional.abs())), 0), true);
         } else {
-            return (encodeLendTrade(uint8(marketIndex), uint88(notional.abs()), 0), true);
+            return (encodeLendTrade(uint8(marketIndex), uint88(int88(notional.abs())), 0), true);
         }
     }
 
@@ -210,7 +221,7 @@ library EncodeDecode {
                     asset.maturity,
                     blockTime
                 );
-                require(0 < asset.notional && asset.notional < type(uint88).max);
+                require(0 < asset.notional && asset.notional < int256(uint256(type(uint88).max)));
 
                 trades[numTrades] = encodeRemoveLiquidity(
                     uint8(marketIndex),

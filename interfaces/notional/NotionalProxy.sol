@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-only
-pragma solidity ^0.7.0;
+pragma solidity ^0.8.0;
 pragma abicoder v2;
 
 import "../../contracts/lib/Types.sol";
@@ -131,6 +131,8 @@ interface NotionalProxy is nTokenERC20, nERC1155Interface, NotionalGovernance, N
     function batchBalanceAndTradeAction(address account, BalanceActionWithTrades[] calldata actions)
         external
         payable;
+
+    function batchLend(address account, BatchLend[] calldata actions) external;
 
     function batchBalanceAndTradeActionWithCallback(
         address account,

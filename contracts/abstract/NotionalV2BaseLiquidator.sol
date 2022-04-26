@@ -128,7 +128,7 @@ abstract contract NotionalV2BaseLiquidator {
 
         // Will withdraw entire cash balance. Don't redeem local currency here because it has been flash
         // borrowed and we need to redeem the entire balance to underlying for the flash loan repayment.
-        _redeemAndWithdraw(localCurrency, uint96(netNTokens), false);
+        _redeemAndWithdraw(localCurrency, uint96(int96(netNTokens)), false);
     }
 
     function _liquidateCollateral(
@@ -167,7 +167,7 @@ abstract contract NotionalV2BaseLiquidator {
         );
 
         // Redeem to underlying for collateral because it needs to be traded on the DEX
-        _redeemAndWithdraw(collateralCurrency, uint96(collateralNTokens), true);
+        _redeemAndWithdraw(collateralCurrency, uint96(int96(collateralNTokens)), true);
         SafeToken.redeemCTokenEntireBalance(collateralAddress);
 
         // Wrap everything to WETH for trading

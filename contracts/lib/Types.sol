@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.7.0;
+pragma solidity ^0.8.0;
 
-import "interfaces/chainlink/AggregatorV2V3Interface.sol";
-import "interfaces/notional/AssetRateAdapter.sol";
+import "../../interfaces/chainlink/AggregatorV2V3Interface.sol";
+import "../../interfaces/notional/AssetRateAdapter.sol";
 
 /// @notice Different types of internal tokens
 ///  - UnderlyingToken: underlying asset for a cToken (except for Ether)
@@ -79,6 +79,15 @@ struct BalanceAction {
     bool withdrawEntireCashBalance;
     // If set to true, will redeem asset cash to the underlying token on withdraw.
     bool redeemToUnderlying;
+}
+
+/// @notice Defines a batch lending action
+struct BatchLend {
+    uint16 currencyId;
+    // True if the contract should try to transfer underlying tokens instead of asset tokens
+    bool depositUnderlying;
+    // Array of tightly packed 32 byte objects that represent trades. See TradeActionType documentation
+    bytes32[] trades;
 }
 
 /// @notice Defines a balance action with a set of trades to do as well
